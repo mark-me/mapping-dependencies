@@ -47,20 +47,29 @@ class MappingDependencyParser:
         """
         dag = ig.Graph.DictList(edges=self.links, vertices=self.nodes, directed=True)
         if not dag.is_dag():
-            logger.error(f"Graph is cyclic, ETL mappings should always be acyclic! https://en.wikipedia.org/wiki/Directed_acyclic_graph")
+            logger.error(
+                f"Graph is cyclic, ETL mappings should always be acyclic! https://en.wikipedia.org/wiki/Directed_acyclic_graph"
+            )
         dag = self._dag_mapping_run_order(dag=dag)
         dag = self._dag_vtx_hierarchy_level(dag=dag)
 
         # Determine if entities are intermediates
         dag.vs["qty_out"] = dag.degree(dag.vs, mode="out")
         dag.vs["qty_in"] = dag.degree(dag.vs, mode="in")
-        lst_entity_role = []
+        lst_entity_position = []
         for qty_in, qty_out, role in zip(
             dag.vs["qty_in"], dag.vs["qty_out"], dag.vs["role"]
         ):
-            is_intermediate = qty_in > 0 and qty_out > 0 and role != "mapping"
-            lst_entity_role.append("entity" if is_intermediate else role)
-        dag.vs["role"] = lst_entity_role
+            if qty_in == 0 and qty_out > 0:
+                position = "start"
+            elif qty_in > 0 and qty_out > 0:
+                position = "intermediate"
+            elif qty_in > 0 and qty_out == 0:
+                position = "end"
+            else:
+                position = "undetermined"
+            lst_entity_position.append(position)
+        dag.vs["position"] = lst_entity_position
         return dag
 
     def _dag_mapping_run_order(self, dag: ig.Graph) -> ig.Graph:
@@ -129,10 +138,17 @@ class MappingDependencyParser:
                 dag.vs[i]["label"] = dag.vs[i]["Name"]
 
         node_colors = {
-            "entity": "gold",
+            "start": "gold",
+            "intermediate": "darkorange",
+            "end": "seagreen",
             "mapping": "slateblue",
+            "undetermined": "red",
         }
-        dag.vs["color"] = [node_colors[type_key] for type_key in dag.vs["role"]]
+        for i in range(dag.vcount()):
+            if dag.vs[i]["role"] == "mapping":
+                dag.vs[i]["color"] = "slateblue"
+            else:
+                dag.vs[i]["color"] = node_colors[dag.vs[i]["position"]]
         node_shapes = {
             "entity": "circle",
             "mapping": "hexagon",
