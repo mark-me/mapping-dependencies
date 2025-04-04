@@ -47,7 +47,7 @@ class MappingDependencyParser:
         """
         dag = ig.Graph.DictList(edges=self.links, vertices=self.nodes, directed=True)
         if not dag.is_dag():
-            logger.error(f"Graph is cyclical, ETL mappings should always be acyclical! https://en.wikipedia.org/wiki/Directed_acyclic_graph")
+            logger.error(f"Graph is cyclic, ETL mappings should always be acyclic! https://en.wikipedia.org/wiki/Directed_acyclic_graph")
         dag = self._dag_mapping_run_order(dag=dag)
         dag = self._dag_vtx_hierarchy_level(dag=dag)
 
