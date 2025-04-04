@@ -56,15 +56,38 @@ class MappingDependencyParser:
             dag (ig.Graph): DAG of mappings and entities
             file_png_out (str): file name to write the image to
         """
+        lst_order = []
+        for i in range(dag.vcount()):
+            lst_order.append(len(dag.subcomponent(dag.vs[i], mode="in")))
+        tets = dag.predecessors(dag.vs[10])
+        # lst_order = dag.topological_sorting(mode="in")
+        # dag_types = dag.vs["type"]
+        # lst_order_2 = []
+        # for order, role in zip(lst_order, dag_types):
+        #     if role == "mapping":
+        #         lst_order_2.append(order)
+        #     else:
+        #         lst_order_2.append(-999)
+        # for i, order in enumerate(lst_order_2):
+        #     if order >= 0:
+        #         dag.vs[i]["label"] = str(order) + "\n" + dag.vs[i]["Name"]
+        #     else:
+        #         dag.vs[i]["label"] = dag.vs[i]["Name"]
         node_colors = {
             "source_entity": "yellow",
             "mapping": "green",
             "target_entity": "red",
         }
         dag.vs["color"] = [node_colors[type_key] for type_key in dag.vs["type"]]
-        dag.vs["label"] = dag.vs["Name"]
-        visual_style = {"bbox": (1920,1080), "layout": dag.layout("rt_circular"), "margin": 50}
-        ig.plot(dag, target=file_png_out, **visual_style)
+        node_shapes = {
+            "source_entity": "triangle-down",
+            "mapping": "rectangle",
+            "target_entity": "diamond",
+        }
+        dag.vs["shape"] = [node_shapes[type_key] for type_key in dag.vs["type"]]
+        layout = dag.layout_sugiyama()
+        visual_style = {"bbox": (1920,1080), "margin": 100}
+        ig.plot(dag, target=file_png_out, layout = layout, directed=True, vertex_label=lst_order, **visual_style)
 
     def plot_dag_interactive(self, dag: ig.Graph, file_png_out: str) -> None:
         df = pd.DataFrame(self.links)
@@ -190,4 +213,4 @@ if __name__ == "__main__":
         if success:
             graph = dep_parser.get_dag()
             dep_parser.plot_dag(graph, "output/dag.png")
-            dep_parser.plot_dag_interactive(graph, file_png_out="output/output.html")
+            #dep_parser.plot_dag_interactive(graph, file_png_out="output/output.html")
