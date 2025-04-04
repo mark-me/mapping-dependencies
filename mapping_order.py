@@ -14,7 +14,7 @@ class MappingDependencies:
         self.nodes = []
         self.links = []
 
-    def load_RETW_file(self, file: str) -> bool:
+    def add_RETW_file(self, file: str) -> bool:
         """Load a RETW json file
 
         Args:
@@ -350,7 +350,7 @@ if __name__ == "__main__":
     dep_parser = MappingDependencies()
 
     for file_RETW in lst_files_RETW:
-        success = dep_parser.load_RETW_file(file=file_RETW)
+        success = dep_parser.add_RETW_file(file=file_RETW)
         if success:
             graph = dep_parser.get_dag()
             dep_parser.plot_dag(graph, "output/dag.png")
