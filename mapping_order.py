@@ -2,7 +2,6 @@ import json
 
 import igraph as ig
 import networkx as nx
-import pandas as pd
 from pyvis.network import Network
 
 from log_config import logging
@@ -41,37 +40,82 @@ class MappingDependencyParser:
         return True
 
     def get_dag(self) -> ig.Graph:
-        """Turns mappings into a Directed Graph
+        """Turns mappings into a Directed Graph and add derived data
 
         Returns:
             ig.Graph: Directed graph of the mappings and entities involved
         """
         dag = ig.Graph.DictList(edges=self.links, vertices=self.nodes, directed=True)
-
-        # Determine running order mappings
-        # First determine the number predecessors that are mappings
-        lst_order = []
-        for i in range(dag.vcount()):
-            lst_vertices = dag.subcomponent(dag.vs[i], mode="in")
-            test = [dag.vs[vtx] for vtx in lst_vertices]
-            vtx_mapping = [vtx for vtx in test if vtx["role"] == "mapping"]
-            qty_mapping_predecessors = len(vtx_mapping)
-            lst_order.append(qty_mapping_predecessors-1)
-        # Assign run order to mappings only
-        lst_run_order = []
-        for run_order, role in zip(lst_order, dag.vs["role"]):
-            lst_run_order.append(run_order if role == "mapping" else -1)
-        dag.vs["run_order"] = lst_run_order
+        if not dag.is_dag():
+            logger.error(f"Graph is cyclical, ETL mappings should always be acyclical! https://en.wikipedia.org/wiki/Directed_acyclic_graph")
+        dag = self._dag_mapping_run_order(dag=dag)
+        dag = self._dag_vtx_hierarchy_level(dag=dag)
 
         # Determine if entities are intermediates
         dag.vs["qty_out"] = dag.degree(dag.vs, mode="out")
         dag.vs["qty_in"] = dag.degree(dag.vs, mode="in")
         lst_entity_role = []
-        for qty_in, qty_out, role in zip(dag.vs["qty_in"], dag.vs["qty_out"], dag.vs["role"]):
-            is_intermediate = (qty_in > 0 and qty_out > 0 and role != "mapping")
-            lst_entity_role.append('entity_intermediate' if is_intermediate else role)
+        for qty_in, qty_out, role in zip(
+            dag.vs["qty_in"], dag.vs["qty_out"], dag.vs["role"]
+        ):
+            is_intermediate = qty_in > 0 and qty_out > 0 and role != "mapping"
+            lst_entity_role.append("entity" if is_intermediate else role)
         dag.vs["role"] = lst_entity_role
+        return dag
 
+    def _dag_mapping_run_order(self, dag: ig.Graph) -> ig.Graph:
+        """Erich the DAG with the sequence the mappings should run in
+
+        Args:
+            dag (ig.Graph): DAG that describes entities and mappings
+
+        Returns:
+            ig.Graph: DAG where the vertices are enriched with the attribute 'run_order', entity vertices get the value -1
+        """
+        lst_mapping_order = []
+        for i in range(dag.vcount()):
+            lst_vertices = dag.subcomponent(dag.vs[i], mode="in")
+            predecessors = [dag.vs[vtx] for vtx in lst_vertices]
+            predecessors_mapping = [
+                vtx for vtx in predecessors if vtx["role"] == "mapping"
+            ]
+            lst_mapping_order.append(len(predecessors_mapping) - 1)
+        # Assign valid run order to mappings only
+        lst_run_order = []
+        for run_order, role in zip(lst_mapping_order, dag.vs["role"]):
+            lst_run_order.append(run_order if role == "mapping" else -1)
+        dag.vs["run_order"] = lst_run_order
+        return dag
+
+    def _dag_vtx_hierarchy_level(self, dag: ig.Graph) -> ig.Graph:
+        """Enrich the DAG with the level in the hierarchy where vertices should be plotted
+
+        Args:
+            dag (ig.Graph): DAG that describes entities and mappings
+
+        Returns:
+            ig.Graph: DAG where the vertices are enriched with the attribute 'level'
+        """
+        lst_level = []
+        for i in range(dag.vcount()):
+            lst_vertices = dag.subcomponent(dag.vs[i], mode="in")
+            predecessors = [dag.vs[vtx] for vtx in lst_vertices]
+            predecessors_test = [dag.vs[vtx]["name"] for vtx in lst_vertices]
+            level = len(
+                [vtx for vtx in lst_vertices if dag.vs[vtx]["role"] == "mapping"]
+            )
+            if dag.vs[i]["role"] == "mapping" and level == 0:
+                level = 1
+            elif dag.vs[i]["role"] == "entity" and level == 0:
+                level = 0
+            else:
+                level = level + 2
+            # Als je een entity bent en geen voorliggende mapping: 0
+            # Als je een entity bent en voorliggende mapping: mappings + 2
+            # Als je een mapping bent zonder voorliggende mappings: 1
+            # Als je een mapping bent met voorliggende mapping: mappings + 2
+            lst_level.append(level)
+        dag.vs["level"] = lst_level
         return dag
 
     def plot_dag(self, dag: ig.Graph, file_png_out: str) -> None:
@@ -89,32 +133,100 @@ class MappingDependencyParser:
                 dag.vs[i]["label"] = dag.vs[i]["Name"]
 
         node_colors = {
-            "entity_source": "yellow",
-            "entity_intermediate": "teal",
-            "mapping": "green",
-            "entity_target": "red",
+            "entity": "gold",
+            "mapping": "slateblue",
         }
         dag.vs["color"] = [node_colors[type_key] for type_key in dag.vs["role"]]
         node_shapes = {
-            "entity_source": "circle",
-            "entity_intermediate": "diamond",
-            "mapping": "rectangle",
-            "entity_target": "circle",
+            "entity": "circle",
+            "mapping": "hexagon",
         }
         dag.vs["shape"] = [node_shapes[type_key] for type_key in dag.vs["role"]]
         layout = dag.layout_sugiyama()
-        visual_style = {"bbox": (1920,1080), "margin": 100}
-        ig.plot(dag, target=file_png_out, layout = layout, directed=True, **visual_style)
+        visual_style = {"bbox": (1920, 1080), "margin": 100}
+        ig.plot(dag, target=file_png_out, layout=layout, directed=True, **visual_style)
 
-    def plot_dag_interactive(self, dag: ig.Graph, file_png_out: str) -> None:
-        df = pd.DataFrame(self.links)
-        #df.loc[df["ẗype"] == "mappings", "color"] = "green"
-        graph = nx.from_pandas_edgelist(df, )
-        nt = Network('1080px', '1920px', directed=True)
-        nt.from_nx(graph)
-        nt.toggle_physics(True)
-        nt.show(file_png_out, notebook=False)
-        pass
+    def igraph_to_networkx(self, dag: ig.Graph) -> nx.DiGraph:
+        """Converts an igraph into a networkx graph
+
+        Args:
+            dag (ig.Graph): igraph graph
+
+        Returns:
+            nx.DiGraph: networkx graph
+        """
+        dag_nx = nx.DiGraph()
+        # Convert nodes
+        lst_nodes_igraph = dag.get_vertex_dataframe().to_dict("records")
+        lst_nodes = []
+        for node in lst_nodes_igraph:
+            lst_nodes.append((node["name"], node))
+        dag_nx.add_nodes_from(lst_nodes)
+
+        # Convert edges
+        lst_edges_igraph = dag.get_edge_dataframe().to_dict("records")
+        lst_edges = []
+        for edge in lst_edges_igraph:
+            lst_edges.append((edge["source"], edge["target"]))
+        dag_nx.add_edges_from(lst_edges)
+        return dag_nx
+
+    def get_dag_networkx(self) -> nx.DiGraph:
+        dag = self.get_dag()
+        network = self.igraph_to_networkx(dag=dag)
+        return network
+
+    def plot_dag_networkx(self, dag: nx.DiGraph, file_html_out: str) -> None:
+        """Create a html file with a graphical representation of a networkx graph
+
+        Args:
+            dag (nx.DiGraph): Networkx DAG
+            file_html_out (str): file path that the result should be written to
+        """
+        net = Network("945px", "1917px", directed=True, layout=True)
+        net.options.layout.hierarchical.sortMethod = "directed"
+        net.options.physics.solver = "hierarchicalRepulsion"
+        net.options.edges.smooth = False
+        net.options.interaction.navigationButtons = True
+        net.from_nx(dag)
+
+        # Set visual node properties
+        for node in net.nodes:
+            node["shape"] = "database" if node["role"] == "entity" else "hexagon"
+            node["shadow"] = True
+            node["label"] = str(node["run_order"]) if node["run_order"] >= 0 else ""
+            node["title"] = f"""Type: {node["role"]}\n
+                    Id: {node["name"]}
+                    Name: {node["Name"]}
+                    Code: {node["Code"]}
+                """
+            if node["role"] == "mapping":
+                node["title"] = (
+                    node["title"]
+                    + f"""
+                    Run order: {str(node["run_order"])}
+                    CreationDate: {node["CreationDate"]}
+                    Creator: {node["Creator"]}
+                    ModificationDate: {node["ModificationDate"]}
+                    Modifier: {node["Modifier"]}
+                """
+                )
+            else:
+                node["title"] = (
+                    node["title"]
+                    + f"""
+                Id Model: {node["IdModel"]}
+                Name Model: {node["NameModel"]}
+                Code Model: {node["CodeModel"]}
+                Is Target: {node["IsDocumentModel"]}
+                """
+                )
+
+        for edge in net.edges:
+            edge["color"] = "grey"
+            edge["shadow"] = True
+        net.toggle_physics(True)
+        net.show(file_html_out, notebook=False)
 
     def _add_mapping(self, dict_mapping: dict) -> bool:
         """Create nodes and edges based on mapping
@@ -199,15 +311,15 @@ class MappingDependencyParser:
         """
         node = {key: entity_target[key] for key in entity_keys if key in entity_target}
         node["name"] = node.pop("Id")
-        node["role"] = "entity_target"
+        node["role"] = "entity"
         return node
 
-    def _create_source_nodes(self, entity_sources: dict, entity_keys: list) -> list:
-        """_summary_
+    def _create_source_nodes(self, entity_sources: list, entity_keys: list) -> list:
+        """Add nodes to the list for entities that are input for a mapping
 
         Args:
-            dict_entity_target (dict): _description_
-            lst_entity_keys (list): _description_
+            entity_sources (list): Dictionaries for the source entities
+            entity_keys (list): Properties of an entity that should be added as node attributes
         """
         lst_nodes = []
         for source in entity_sources:
@@ -216,7 +328,7 @@ class MappingDependencyParser:
                 key: source_entity[key] for key in entity_keys if key in source_entity
             }
             node["name"] = node.pop("Id")
-            node["role"] = "entity_source"
+            node["role"] = "entity"
             lst_nodes.append(node)
         return lst_nodes
 
@@ -230,4 +342,5 @@ if __name__ == "__main__":
         if success:
             graph = dep_parser.get_dag()
             dep_parser.plot_dag(graph, "output/dag.png")
-            #dep_parser.plot_dag_interactive(graph, file_png_out="output/output.html")
+            dag = dep_parser.igraph_to_networkx(graph)
+            dep_parser.plot_dag_networkx(dag, file_html_out="output/dag.html")
