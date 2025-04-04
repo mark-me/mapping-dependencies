@@ -49,6 +49,7 @@ class MappingDependencyParser:
         dag = ig.Graph.DictList(edges=self.links, vertices=self.nodes, directed=True)
 
         # Determine running order mappings
+        # First determine the number predecessors that are mappings
         lst_order = []
         for i in range(dag.vcount()):
             lst_vertices = dag.subcomponent(dag.vs[i], mode="in")
@@ -56,14 +57,13 @@ class MappingDependencyParser:
             vtx_mapping = [vtx for vtx in test if vtx["role"] == "mapping"]
             qty_mapping_predecessors = len(vtx_mapping)
             lst_order.append(qty_mapping_predecessors-1)
-
         # Assign run order to mappings only
         lst_run_order = []
         for run_order, role in zip(lst_order, dag.vs["role"]):
             lst_run_order.append(run_order if role == "mapping" else -1)
         dag.vs["run_order"] = lst_run_order
 
-        # Determine intermediate entities
+        # Determine if entities are intermediates
         dag.vs["qty_out"] = dag.degree(dag.vs, mode="out")
         dag.vs["qty_in"] = dag.degree(dag.vs, mode="in")
         lst_entity_role = []
