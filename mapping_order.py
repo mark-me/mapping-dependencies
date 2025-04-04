@@ -39,6 +39,110 @@ class MappingDependencies:
 
         return True
 
+    def _add_mapping(self, dict_mapping: dict) -> bool:
+        """Create nodes and edges based on mapping
+
+        Args:
+            dict_mapping (dict): RETW mapping
+        """
+        # Create a node from the mapping information
+        node_mapping = self._create_mapping_node(dict_mapping)
+
+        # Create nodes for target and source entities
+        keys_entity = [
+            "Id",
+            "Name",
+            "Code",
+            "IdModel",
+            "NameModel",
+            "CodeModel",
+            "IsDocumentModel",
+        ]
+        if "EntityTarget" in dict_mapping:
+            node_target = self._create_target_node(
+                dict_mapping["EntityTarget"], entity_keys=keys_entity
+            )
+        else:
+            logger.error(
+                f"Could not find target entity for mapping '{dict_mapping['Name']}'"
+            )
+            return False
+        if "SourceComposition" in dict_mapping:
+            nodes_source = self._create_source_nodes(
+                dict_mapping["SourceComposition"], entity_keys=keys_entity
+            )
+        else:
+            return False
+
+        # Create links
+        self.links.append(
+            {"source": node_mapping["name"], "target": node_target["name"]}
+        )
+        links_source = [
+            {"source": node["name"], "target": node_mapping["name"]}
+            for node in nodes_source
+        ]
+        self.links = self.links + links_source
+
+        # Combine nodes
+        lst_tmp_nodes = self.nodes + nodes_source + [node_mapping] + [node_target]
+        # Make sure only unique nodes are added (entities can be part of multiple mappings)
+        self.nodes = list({v["name"]: v for v in lst_tmp_nodes}.values())
+        return True
+
+    def _create_mapping_node(self, mapping: dict) -> dict:
+        """Create a node for the mapping
+
+        Args:
+            mapping (dict): Mapping data
+
+        Returns:
+            dict: Mapping data, excluding source and entity data
+        """
+        keys_mapping = [
+            "Id",
+            "Name",
+            "Code",
+            "CreationDate",
+            "Creator",
+            "ModificationDate",
+            "Modifier",
+        ]
+        node = {key: mapping[key] for key in keys_mapping}
+        node["name"] = node.pop("Id")
+        node["role"] = "mapping"
+        return node
+
+    def _create_target_node(self, entity_target: dict, entity_keys: list) -> dict:
+        """_summary_
+
+        Args:
+            dict_entity_target (dict): Data on the target entity
+            lst_entity_keys (list): Entity data to include in the node
+        """
+        node = {key: entity_target[key] for key in entity_keys if key in entity_target}
+        node["name"] = node.pop("Id")
+        node["role"] = "entity"
+        return node
+
+    def _create_source_nodes(self, entity_sources: list, entity_keys: list) -> list:
+        """Add nodes to the list for entities that are input for a mapping
+
+        Args:
+            entity_sources (list): Dictionaries for the source entities
+            entity_keys (list): Properties of an entity that should be added as node attributes
+        """
+        lst_nodes = []
+        for source in entity_sources:
+            source_entity = source["Entity"]
+            node = {
+                key: source_entity[key] for key in entity_keys if key in source_entity
+            }
+            node["name"] = node.pop("Id")
+            node["role"] = "entity"
+            lst_nodes.append(node)
+        return lst_nodes
+
     def get_dag(self) -> ig.Graph:
         """Turns mappings into a Directed Graph and add derived data
 
@@ -48,7 +152,7 @@ class MappingDependencies:
         dag = ig.Graph.DictList(edges=self.links, vertices=self.nodes, directed=True)
         if not dag.is_dag():
             logger.error(
-                f"Graph is cyclic, ETL mappings should always be acyclic! https://en.wikipedia.org/wiki/Directed_acyclic_graph"
+                "Graph is cyclic, ETL mappings should always be acyclic! https://en.wikipedia.org/wiki/Directed_acyclic_graph"
             )
         dag = self._dag_mapping_run_order(dag=dag)
         dag = self._dag_vtx_hierarchy_level(dag=dag)
@@ -239,110 +343,6 @@ class MappingDependencies:
             edge["shadow"] = True
         net.toggle_physics(True)
         net.show(file_html_out, notebook=False)
-
-    def _add_mapping(self, dict_mapping: dict) -> bool:
-        """Create nodes and edges based on mapping
-
-        Args:
-            dict_mapping (dict): RETW mapping
-        """
-        # Create a node from the mapping information
-        node_mapping = self._create_mapping_node(dict_mapping)
-
-        # Create nodes for target and source entities
-        keys_entity = [
-            "Id",
-            "Name",
-            "Code",
-            "IdModel",
-            "NameModel",
-            "CodeModel",
-            "IsDocumentModel",
-        ]
-        if "EntityTarget" in dict_mapping:
-            node_target = self._create_target_node(
-                dict_mapping["EntityTarget"], entity_keys=keys_entity
-            )
-        else:
-            logger.error(
-                f"Could not find target entity for mapping '{dict_mapping['Name']}'"
-            )
-            return False
-        if "SourceComposition" in dict_mapping:
-            nodes_source = self._create_source_nodes(
-                dict_mapping["SourceComposition"], entity_keys=keys_entity
-            )
-        else:
-            return False
-
-        # Create links
-        self.links.append(
-            {"source": node_mapping["name"], "target": node_target["name"]}
-        )
-        links_source = [
-            {"source": node["name"], "target": node_mapping["name"]}
-            for node in nodes_source
-        ]
-        self.links = self.links + links_source
-
-        # Combine nodes
-        lst_tmp_nodes = self.nodes + nodes_source + [node_mapping] + [node_target]
-        # Make sure only unique nodes are added (entities can be part of multiple mappings)
-        self.nodes = list({v["name"]: v for v in lst_tmp_nodes}.values())
-        return True
-
-    def _create_mapping_node(self, mapping: dict) -> dict:
-        """Create a node for the mapping
-
-        Args:
-            mapping (dict): Mapping data
-
-        Returns:
-            dict: Mapping data, excluding source and entity data
-        """
-        keys_mapping = [
-            "Id",
-            "Name",
-            "Code",
-            "CreationDate",
-            "Creator",
-            "ModificationDate",
-            "Modifier",
-        ]
-        node = {key: mapping[key] for key in keys_mapping}
-        node["name"] = node.pop("Id")
-        node["role"] = "mapping"
-        return node
-
-    def _create_target_node(self, entity_target: dict, entity_keys: list) -> dict:
-        """_summary_
-
-        Args:
-            dict_entity_target (dict): Data on the target entity
-            lst_entity_keys (list): Entity data to include in the node
-        """
-        node = {key: entity_target[key] for key in entity_keys if key in entity_target}
-        node["name"] = node.pop("Id")
-        node["role"] = "entity"
-        return node
-
-    def _create_source_nodes(self, entity_sources: list, entity_keys: list) -> list:
-        """Add nodes to the list for entities that are input for a mapping
-
-        Args:
-            entity_sources (list): Dictionaries for the source entities
-            entity_keys (list): Properties of an entity that should be added as node attributes
-        """
-        lst_nodes = []
-        for source in entity_sources:
-            source_entity = source["Entity"]
-            node = {
-                key: source_entity[key] for key in entity_keys if key in source_entity
-            }
-            node["name"] = node.pop("Id")
-            node["role"] = "entity"
-            lst_nodes.append(node)
-        return lst_nodes
 
 
 if __name__ == "__main__":
