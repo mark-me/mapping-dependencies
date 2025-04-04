@@ -99,8 +99,6 @@ class MappingDependencyParser:
         lst_level = []
         for i in range(dag.vcount()):
             lst_vertices = dag.subcomponent(dag.vs[i], mode="in")
-            predecessors = [dag.vs[vtx] for vtx in lst_vertices]
-            predecessors_test = [dag.vs[vtx]["name"] for vtx in lst_vertices]
             level = len(
                 [vtx for vtx in lst_vertices if dag.vs[vtx]["role"] == "mapping"]
             )
@@ -112,10 +110,6 @@ class MappingDependencyParser:
                 level = level + 1
             else:
                 level = level + 2
-            # Als je een entity bent en geen voorliggende mapping: 0
-            # Als je een entity bent en voorliggende mapping: mappings + 2
-            # Als je een mapping bent zonder voorliggende mappings: 1
-            # Als je een mapping bent met voorliggende mapping: mappings + 2
             lst_level.append(level)
         dag.vs["level"] = lst_level
         return dag
