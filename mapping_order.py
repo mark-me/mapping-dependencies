@@ -146,7 +146,7 @@ class MappingDependencyParser:
         }
         for i in range(dag.vcount()):
             if dag.vs[i]["role"] == "mapping":
-                dag.vs[i]["color"] = "slateblue"
+                dag.vs[i]["color"] = node_colors[dag.vs[i]["role"]]
             else:
                 dag.vs[i]["color"] = node_colors[dag.vs[i]["position"]]
         node_shapes = {
