@@ -339,7 +339,7 @@ class MappingDependencies:
                 )
 
         for edge in net.edges:
-            edge["color"] = "grey"
+            edge["color"] = "darkslategrey"
             edge["shadow"] = True
         net.toggle_physics(True)
         net.show(file_html_out, notebook=False)
