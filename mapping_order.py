@@ -9,7 +9,7 @@ from log_config import logging
 logger = logging.getLogger(__name__)
 
 
-class MappingDependencyParser:
+class MappingDependencies:
     def __init__(self):
         self.nodes = []
         self.links = []
@@ -347,7 +347,7 @@ class MappingDependencyParser:
 
 if __name__ == "__main__":
     lst_files_RETW = ["output/Usecase_Aangifte_Behandeling.json"]
-    dep_parser = MappingDependencyParser()
+    dep_parser = MappingDependencies()
 
     for file_RETW in lst_files_RETW:
         success = dep_parser.load_RETW_file(file=file_RETW)
