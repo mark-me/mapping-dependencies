@@ -46,8 +46,33 @@ class MappingDependencyParser:
         Returns:
             ig.Graph: Directed graph of the mappings and entities involved
         """
-        graph = ig.Graph.DictList(edges=self.links, vertices=self.nodes, directed=True)
-        return graph
+        dag = ig.Graph.DictList(edges=self.links, vertices=self.nodes, directed=True)
+
+        # Determine running order mappings
+        lst_order = []
+        for i in range(dag.vcount()):
+            lst_vertices = dag.subcomponent(dag.vs[i], mode="in")
+            test = [dag.vs[vtx] for vtx in lst_vertices]
+            vtx_mapping = [vtx for vtx in test if vtx["role"] == "mapping"]
+            qty_mapping_predecessors = len(vtx_mapping)
+            lst_order.append(qty_mapping_predecessors-1)
+
+        # Assign run order to mappings only
+        lst_run_order = []
+        for run_order, role in zip(lst_order, dag.vs["role"]):
+            lst_run_order.append(run_order if role == "mapping" else -1)
+        dag.vs["run_order"] = lst_run_order
+
+        # Determine intermediate entities
+        dag.vs["qty_out"] = dag.degree(dag.vs, mode="out")
+        dag.vs["qty_in"] = dag.degree(dag.vs, mode="in")
+        lst_entity_role = []
+        for qty_in, qty_out, role in zip(dag.vs["qty_in"], dag.vs["qty_out"], dag.vs["role"]):
+            is_intermediate = (qty_in > 0 and qty_out > 0 and role != "mapping")
+            lst_entity_role.append('entity_intermediate' if is_intermediate else role)
+        dag.vs["role"] = lst_entity_role
+
+        return dag
 
     def plot_dag(self, dag: ig.Graph, file_png_out: str) -> None:
         """Creates an image of the DAG
@@ -56,38 +81,30 @@ class MappingDependencyParser:
             dag (ig.Graph): DAG of mappings and entities
             file_png_out (str): file name to write the image to
         """
-        lst_order = []
-        for i in range(dag.vcount()):
-            lst_order.append(len(dag.subcomponent(dag.vs[i], mode="in")))
-        tets = dag.predecessors(dag.vs[10])
-        # lst_order = dag.topological_sorting(mode="in")
-        # dag_types = dag.vs["type"]
-        # lst_order_2 = []
-        # for order, role in zip(lst_order, dag_types):
-        #     if role == "mapping":
-        #         lst_order_2.append(order)
-        #     else:
-        #         lst_order_2.append(-999)
-        # for i, order in enumerate(lst_order_2):
-        #     if order >= 0:
-        #         dag.vs[i]["label"] = str(order) + "\n" + dag.vs[i]["Name"]
-        #     else:
-        #         dag.vs[i]["label"] = dag.vs[i]["Name"]
+        # Assign label to nodes
+        for i, order in enumerate(dag.vs["run_order"]):
+            if order >= 0:
+                dag.vs[i]["label"] = str(order) + "\n" + dag.vs[i]["Name"]
+            else:
+                dag.vs[i]["label"] = dag.vs[i]["Name"]
+
         node_colors = {
-            "source_entity": "yellow",
+            "entity_source": "yellow",
+            "entity_intermediate": "teal",
             "mapping": "green",
-            "target_entity": "red",
+            "entity_target": "red",
         }
-        dag.vs["color"] = [node_colors[type_key] for type_key in dag.vs["type"]]
+        dag.vs["color"] = [node_colors[type_key] for type_key in dag.vs["role"]]
         node_shapes = {
-            "source_entity": "triangle-down",
+            "entity_source": "circle",
+            "entity_intermediate": "diamond",
             "mapping": "rectangle",
-            "target_entity": "diamond",
+            "entity_target": "circle",
         }
-        dag.vs["shape"] = [node_shapes[type_key] for type_key in dag.vs["type"]]
+        dag.vs["shape"] = [node_shapes[type_key] for type_key in dag.vs["role"]]
         layout = dag.layout_sugiyama()
         visual_style = {"bbox": (1920,1080), "margin": 100}
-        ig.plot(dag, target=file_png_out, layout = layout, directed=True, vertex_label=lst_order, **visual_style)
+        ig.plot(dag, target=file_png_out, layout = layout, directed=True, **visual_style)
 
     def plot_dag_interactive(self, dag: ig.Graph, file_png_out: str) -> None:
         df = pd.DataFrame(self.links)
@@ -170,7 +187,7 @@ class MappingDependencyParser:
         ]
         node = {key: mapping[key] for key in keys_mapping}
         node["name"] = node.pop("Id")
-        node["type"] = "mapping"
+        node["role"] = "mapping"
         return node
 
     def _create_target_node(self, entity_target: dict, entity_keys: list) -> dict:
@@ -182,7 +199,7 @@ class MappingDependencyParser:
         """
         node = {key: entity_target[key] for key in entity_keys if key in entity_target}
         node["name"] = node.pop("Id")
-        node["type"] = "target_entity"
+        node["role"] = "entity_target"
         return node
 
     def _create_source_nodes(self, entity_sources: dict, entity_keys: list) -> list:
@@ -199,7 +216,7 @@ class MappingDependencyParser:
                 key: source_entity[key] for key in entity_keys if key in source_entity
             }
             node["name"] = node.pop("Id")
-            node["type"] = "source_entity"
+            node["role"] = "entity_source"
             lst_nodes.append(node)
         return lst_nodes
 
