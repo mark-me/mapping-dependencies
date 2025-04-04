@@ -108,6 +108,8 @@ class MappingDependencyParser:
                 level = 1
             elif dag.vs[i]["role"] == "entity" and level == 0:
                 level = 0
+            elif dag.vs[i]["role"] == "mapping" and level > 0:
+                level = level + 1
             else:
                 level = level + 2
             # Als je een entity bent en geen voorliggende mapping: 0
