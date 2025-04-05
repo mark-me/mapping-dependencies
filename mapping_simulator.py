@@ -6,11 +6,6 @@ from mapping_order import MappingDependencies
 class MappingSimulator(MappingDependencies):
     def __init__(self):
         super().__init__()
-        self.dag = ig.Graph()
-
-    def get_dag_status(self):
-        self.dag = self.get_dag_networkx()
-        return self.dag
 
     def set_entity_failed(self, id: str):
         dag = self.get_dag()
@@ -29,7 +24,7 @@ class MappingSimulator(MappingDependencies):
 
 if __name__ == "__main__":
     lst_files_RETW = ["output/Usecase_Aangifte_Behandeling.json"]
-    id_mapping_failed = "o319"
+    id_mapping_failed = "o71"
     mapping_simulator = MappingSimulator()
     for file_RETW in lst_files_RETW:
         success = mapping_simulator.add_RETW_file(file_RETW=file_RETW)

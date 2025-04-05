@@ -290,8 +290,8 @@ class MappingDependencies:
 
         node_colors = {
             "start": "gold",
-            "intermediate": "teal",
-            "end": "seagreen",
+            "intermediate": "mediumaquamarine",
+            "end": "limegreen",
             "mapping": "slateblue",
             "undetermined": "red",
         }
@@ -402,6 +402,8 @@ class MappingDependencies:
         net.options.edges.smooth = False
         net.options.interaction.navigationButtons = True
         net.toggle_physics(True)
+        for edge in net.edges:
+            edge["shadow"] = True
         net.show(file_html_out, notebook=False)
 
 
