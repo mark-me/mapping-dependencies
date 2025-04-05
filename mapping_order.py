@@ -175,6 +175,7 @@ class MappingDependencies:
 
         dag = self._dag_mapping_run_order(dag=dag)
         dag = self._dag_node_hierarchy_level(dag=dag)
+        dag = self._set_dag_visual_attributes(dag=dag)
         return dag
 
     def _dag_mapping_run_order(self, dag: ig.Graph) -> ig.Graph:
@@ -240,12 +241,14 @@ class MappingDependencies:
 
         return dag
 
-    def plot_dag(self, dag: ig.Graph, file_png_out: str) -> None:
-        """Creates an image of the DAG
+    def _set_dag_visual_attributes(self, dag: ig.Graph) -> ig.Graph:
+        """Sets visual attributes for nodes in the dag
 
         Args:
-            dag (ig.Graph): DAG of mappings and entities
-            file_png_out (str): file name to write the image to
+            dag (ig.Graph): _description_
+
+        Returns:
+            ig.Graph: _description_
         """
         # Assign label to nodes
         for i, order in enumerate(dag.vs["run_order"]):
@@ -271,11 +274,20 @@ class MappingDependencies:
             "mapping": "hexagon",
         }
         dag.vs["shape"] = [node_shapes[type_key] for type_key in dag.vs["role"]]
+        return dag
+
+    def plot_dag(self, dag: ig.Graph, file_png_out: str) -> None:
+        """Creates an image of the DAG
+
+        Args:
+            dag (ig.Graph): DAG of mappings and entities
+            file_png_out (str): file name to write the image to
+        """
         layout = dag.layout_sugiyama()
         visual_style = {"bbox": (1920, 1080), "margin": 100}
         ig.plot(dag, target=file_png_out, layout=layout, directed=True, **visual_style)
 
-    def igraph_to_networkx(self, dag: ig.Graph) -> nx.DiGraph:
+    def _igraph_to_networkx(self, dag: ig.Graph) -> nx.DiGraph:
         """Converts an igraph into a networkx graph
 
         Args:
@@ -302,7 +314,7 @@ class MappingDependencies:
 
     def get_dag_networkx(self) -> nx.DiGraph:
         dag = self.get_dag()
-        network = self.igraph_to_networkx(dag=dag)
+        network = self._igraph_to_networkx(dag=dag)
         return network
 
     def plot_dag_networkx(self, dag: nx.DiGraph, file_html_out: str) -> None:
@@ -368,5 +380,5 @@ if __name__ == "__main__":
         if success:
             graph = dep_parser.get_dag()
             dep_parser.plot_dag(graph, "output/dag.png")
-            dag = dep_parser.igraph_to_networkx(graph)
+            dag = dep_parser.get_dag_networkx()
             dep_parser.plot_dag_networkx(dag, file_html_out="output/dag.html")
