@@ -70,12 +70,12 @@ def main():
                 "Mappings": mapping_simulator.get_affected_mappings(),
                 "Entities": mapping_simulator.get_affected_entities(),
             }
-            with open("output/fallout.json", "w", encoding="utf-8") as file:
+            with open("output/dag_run_fallout.json", "w", encoding="utf-8") as file:
                 json.dump(dict_fallout, file, indent=4)
 
             # Get fallout visualization
             mapping_simulator.plot_dag_networkx(
-                dag, file_html_out="output/dag_simulated.html"
+                dag, file_html_out="output/dag_run_report.html"
             )
 
 
