@@ -1,7 +1,7 @@
 {
     "Mappings": {
-        "failed": [],
-        "affected": [
+        "Failed": [],
+        "Affected": [
             {
                 "Id": "o67",
                 "Name": "SL_DMS Declaration",
@@ -68,7 +68,7 @@
         ]
     },
     "Entities": {
-        "failed": [
+        "Failed": [
             {
                 "Id": "o71",
                 "Name": "DECLARTN",
@@ -79,7 +79,7 @@
                 "Modifier": null
             }
         ],
-        "affected": [
+        "Affected": [
             {
                 "Id": "o34",
                 "Name": "Declaration",
