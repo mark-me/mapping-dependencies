@@ -13,6 +13,24 @@ class MappingDependencies:
     def __init__(self):
         self.nodes = []
         self.links = []
+        self.keys_mapping = [
+            "Id",
+            "Name",
+            "Code",
+            "CreationDate",
+            "Creator",
+            "ModificationDate",
+            "Modifier",
+        ]
+        self.keys_entity = [
+            "Id",
+            "Name",
+            "Code",
+            "IdModel",
+            "NameModel",
+            "CodeModel",
+            "IsDocumentModel",
+        ]
 
     def add_RETW_file(self, file_RETW: str) -> bool:
         """Load a RETW json file
@@ -49,18 +67,9 @@ class MappingDependencies:
         node_mapping = self._create_mapping_node(dict_mapping)
 
         # Create nodes for target and source entities
-        keys_entity = [
-            "Id",
-            "Name",
-            "Code",
-            "IdModel",
-            "NameModel",
-            "CodeModel",
-            "IsDocumentModel",
-        ]
         if "EntityTarget" in dict_mapping:
             node_target = self._create_target_node(
-                dict_mapping["EntityTarget"], entity_keys=keys_entity
+                dict_mapping["EntityTarget"], entity_keys=self.keys_entity
             )
         else:
             logger.error(
@@ -69,7 +78,7 @@ class MappingDependencies:
             return False
         if "SourceComposition" in dict_mapping:
             nodes_source = self._create_source_nodes(
-                dict_mapping["SourceComposition"], entity_keys=keys_entity
+                dict_mapping["SourceComposition"], entity_keys=self.keys_entity
             )
         else:
             return False
@@ -99,17 +108,8 @@ class MappingDependencies:
         Returns:
             dict: Mapping data, excluding source and entity data
         """
-        keys_mapping = [
-            "Id",
-            "Name",
-            "Code",
-            "CreationDate",
-            "Creator",
-            "ModificationDate",
-            "Modifier",
-        ]
-        node = {key: mapping[key] for key in keys_mapping}
-        node["name"] = node.pop("Id")
+        node = {key: mapping[key] for key in self.keys_mapping}
+        node["name"] = node["Id"]
         node["role"] = "mapping"
         return node
 
@@ -121,7 +121,7 @@ class MappingDependencies:
             lst_entity_keys (list): Entity data to include in the node
         """
         node = {key: entity_target[key] for key in entity_keys if key in entity_target}
-        node["name"] = node.pop("Id")
+        node["name"] = node["Id"]
         node["role"] = "entity"
         return node
 
@@ -138,7 +138,7 @@ class MappingDependencies:
             node = {
                 key: source_entity[key] for key in entity_keys if key in source_entity
             }
-            node["name"] = node.pop("Id")
+            node["name"] = node["Id"]
             node["role"] = "entity"
             lst_nodes.append(node)
         return lst_nodes
@@ -153,18 +153,9 @@ class MappingDependencies:
         dag = self.get_dag()
         for node in dag.vs:
             if node["role"] == "mapping":
-                lst_mappings.append(
-                    {
-                        "RunOrder": node["run_order"],
-                        "Id": node["name"],
-                        "Name": node["Name"],
-                        "Code": node["Code"],
-                        "CreationDate": node["CreationDate"],
-                        "Creator": node["Creator"],
-                        "ModificationDate": node["ModificationDate"],
-                        "Modifier": node["Modifier"],
-                    }
-                )
+                dict_mapping = {key: node[key] for key in self.keys_mapping}
+                dict_mapping["RunOrder"] = node["run_order"]
+                lst_mappings.append(dict_mapping)
         # Sort the list of mappings by run order and the id
         sorting = sorted([(i['RunOrder'], i['Id'], i) for i in lst_mappings])
         lst_mappings = [i[2] for i in sorting]
@@ -407,7 +398,7 @@ class MappingDependencies:
         net.show(file_html_out, notebook=False)
 
 
-if __name__ == "__main__":
+def main():
     lst_files_RETW = ["output/Usecase_Aangifte_Behandeling.json"]
     dep_parser = MappingDependencies()
 
@@ -419,3 +410,6 @@ if __name__ == "__main__":
             dep_parser.plot_dag(graph, "output/dag.png")
             dag = dep_parser.get_dag_networkx()
             dep_parser.plot_dag_networkx(dag, file_html_out="output/dag.html")
+
+if __name__ == "__main__":
+    main()
