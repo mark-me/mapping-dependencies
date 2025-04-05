@@ -24,7 +24,7 @@ class MappingDependencies:
             bool: Indicates whether the RETW file was processed
         """
         try:
-            with open(file_RETW) as file:
+            with open(file) as file:
                 dict_RETW = json.load(file)
         except FileNotFoundError:
             logger.error(f"Could not find file '{file}'")
