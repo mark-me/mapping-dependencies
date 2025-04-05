@@ -44,8 +44,8 @@ class MappingSimulator(MappingDependencies):
                 else:
                     lst_affected.append(dict_mapping)
         dict_results = {
-            "failed": lst_failed,
-            "affected": lst_affected,
+            "Failed": lst_failed,
+            "Affected": lst_affected,
         }
         return dict_results
 
