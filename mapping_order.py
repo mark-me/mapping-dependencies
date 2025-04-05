@@ -154,8 +154,6 @@ class MappingDependencies:
             logger.error(
                 "Graph is cyclic, ETL mappings should always be acyclic! https://en.wikipedia.org/wiki/Directed_acyclic_graph"
             )
-        dag = self._dag_mapping_run_order(dag=dag)
-        dag = self._dag_vtx_hierarchy_level(dag=dag)
 
         # Determine if entities are intermediates
         dag.vs["qty_out"] = dag.degree(dag.vs, mode="out")
@@ -174,6 +172,9 @@ class MappingDependencies:
                 position = "undetermined"
             lst_entity_position.append(position)
         dag.vs["position"] = lst_entity_position
+
+        dag = self._dag_mapping_run_order(dag=dag)
+        dag = self._dag_node_hierarchy_level(dag=dag)
         return dag
 
     def _dag_mapping_run_order(self, dag: ig.Graph) -> ig.Graph:
@@ -200,7 +201,7 @@ class MappingDependencies:
         dag.vs["run_order"] = lst_run_order
         return dag
 
-    def _dag_vtx_hierarchy_level(self, dag: ig.Graph) -> ig.Graph:
+    def _dag_node_hierarchy_level(self, dag: ig.Graph) -> ig.Graph:
         """Enrich the DAG with the level in the hierarchy where vertices should be plotted
 
         Args:
@@ -209,22 +210,34 @@ class MappingDependencies:
         Returns:
             ig.Graph: DAG where the vertices are enriched with the attribute 'level'
         """
+        # Determine level by mappings in the preceding network
         lst_level = []
         for i in range(dag.vcount()):
             lst_vertices = dag.subcomponent(dag.vs[i], mode="in")
             level = len(
                 [vtx for vtx in lst_vertices if dag.vs[vtx]["role"] == "mapping"]
             )
-            if dag.vs[i]["role"] == "mapping" and level == 0:
+            if dag.vs[i]["role"] == "mapping" and level == 1:
                 level = 1
             elif dag.vs[i]["role"] == "entity" and level == 0:
                 level = 0
-            elif dag.vs[i]["role"] == "mapping" and level > 0:
+            elif dag.vs[i]["role"] == "entity" and level == 1:
+                level = 2
+            elif dag.vs[i]["role"] == "mapping" and level > 1:
                 level = level + 1
-            else:
+            elif dag.vs[i]["role"] == "entity" and level > 1:
                 level = level + 2
             lst_level.append(level)
         dag.vs["level"] = lst_level
+
+        # Set all end entities at highest level
+        level_max = max(
+                [dag.vs[vtx]["level"] for vtx in lst_vertices if dag.vs[vtx]["position"] == "end"]
+            )
+        for i in range(dag.vcount()):
+            if dag.vs[i]["position"] == "end":
+                dag.vs[i]["level"] = level_max
+
         return dag
 
     def plot_dag(self, dag: ig.Graph, file_png_out: str) -> None:
@@ -312,6 +325,7 @@ class MappingDependencies:
             node["shadow"] = True
             node["label"] = str(node["run_order"]) if node["run_order"] >= 0 else ""
             node["title"] = f"""Type: {node["role"]}\n
+                    level: {node["level"]}
                     Id: {node["name"]}
                     Name: {node["Name"]}
                     Code: {node["Code"]}
