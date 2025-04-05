@@ -14,7 +14,7 @@ class MappingDependencies:
         self.nodes = []
         self.links = []
 
-    def add_RETW_file(self, file: str) -> bool:
+    def add_RETW_file(self, file_RETW: str) -> bool:
         """Load a RETW json file
 
         Args:
@@ -24,10 +24,10 @@ class MappingDependencies:
             bool: Indicates whether the RETW file was processed
         """
         try:
-            with open(file) as file:
+            with open(file_RETW) as file:
                 dict_RETW = json.load(file)
         except FileNotFoundError:
-            logger.error(f"Could not find file '{file}'")
+            logger.error(f"Could not find file '{file_RETW}'")
             return False
 
         if "Mappings" in dict_RETW:
@@ -35,7 +35,7 @@ class MappingDependencies:
             for mapping in lst_mappings:
                 self._add_mapping(dict_mapping=mapping)
         else:
-            logger.warning(f"Couldn't find mappings in RETW file '{file}'")
+            logger.warning(f"Couldn't find mappings in RETW file '{file_RETW}'")
 
         return True
 
@@ -410,7 +410,7 @@ if __name__ == "__main__":
     dep_parser = MappingDependencies()
 
     for file_RETW in lst_files_RETW:
-        success = dep_parser.add_RETW_file(file=file_RETW)
+        success = dep_parser.add_RETW_file(file_RETW=file_RETW)
         if success:
             lst_mapping_order = dep_parser.get_mapping_order()
             graph = dep_parser.get_dag()
