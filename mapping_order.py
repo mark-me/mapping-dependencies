@@ -337,7 +337,6 @@ class MappingDependencies:
             node["shadow"] = True
             node["label"] = str(node["run_order"]) if node["run_order"] >= 0 else ""
             node["title"] = f"""Type: {node["role"]}\n
-                    level: {node["level"]}
                     Id: {node["name"]}
                     Name: {node["Name"]}
                     Code: {node["Code"]}
