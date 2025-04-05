@@ -14,6 +14,11 @@ class MappingSimulator(MappingDependencies):
         self.node_affected = []
 
     def _derive_affected(self) -> ig.Graph:
+        """Changes the DAG to describe the failure of an ETL step and it's consquences
+
+        Returns:
+            ig.Graph: _description_
+        """
         self.node_affected = self.dag.subcomponent(self.node_failed, mode="out")
         # Set visual attributes accordingly
         self._set_pyvis_attributes(dag=self.dag)
@@ -25,6 +30,14 @@ class MappingSimulator(MappingDependencies):
                 self.dag.vs[id_node]["color"] = "darkorange"
 
     def set_entity_failed(self, id: str) -> nx.DiGraph:
+        """Sets the status of an entity (or mapping) to failed, and derives the consequences in the ETL DAG.
+
+        Args:
+            id (str): The 'o' identifier of an object
+
+        Returns:
+            nx.DiGraph: A networkx graph with the failure and it's consequences.
+        """
         self.dag = self.get_dag()
         self.node_failed = self.dag.vs.find(name=id).index
         self._derive_affected()
@@ -32,6 +45,14 @@ class MappingSimulator(MappingDependencies):
         return network
 
     def _get_affected_nodes(self, filter_role: str) -> dict:
+        """Get the nodes in the DAG, categorized by failures and affected.
+
+        Args:
+            filter_role (str): Indicates whether mapping(s) or entity(s) should be returned
+
+        Returns:
+            dict: nodes affected by the failure, categorized by failures and affected.
+        """
         dict_results = {}
         lst_failed = []
         lst_affected = []
@@ -49,31 +70,33 @@ class MappingSimulator(MappingDependencies):
         }
         return dict_results
 
-    def get_affected_mappings(self) -> dict:
-        return self._get_affected_nodes(filter_role="mapping")
+    def get_report_fallout(self) -> dict:
+        """Generates a dictionary reporting on the affected ETL components
 
-    def get_affected_entities(self) -> dict:
-        return self._get_affected_nodes(filter_role="entity")
+        Returns:
+            dict: Report on mappings and entities that failed or are affected by the failure
+        """
+        dict_fallout = {
+            "Mappings": self._get_affected_nodes(filter_role="mapping"),
+            "Entities": self._get_affected_nodes(filter_role="entity"),
+        }
+        return dict_fallout
 
 
 def main():
     lst_files_RETW = ["output/Usecase_Aangifte_Behandeling.json"]
     id_entity_failed = "o71"
+
     mapping_simulator = MappingSimulator()
     for file_RETW in lst_files_RETW:
-        success = mapping_simulator.add_RETW_file(file_RETW=file_RETW)
-        if success:
+        if mapping_simulator.add_RETW_file(file_RETW=file_RETW):
             # Set failed node
             dag = mapping_simulator.set_entity_failed(id=id_entity_failed)
-            # Get fallout report file
-            dict_fallout = {
-                "Mappings": mapping_simulator.get_affected_mappings(),
-                "Entities": mapping_simulator.get_affected_entities(),
-            }
+            # Create fallout report file
+            dict_fallout = mapping_simulator.get_report_fallout()
             with open("output/dag_run_fallout.json", "w", encoding="utf-8") as file:
                 json.dump(dict_fallout, file, indent=4)
-
-            # Get fallout visualization
+            # Create fallout visualization
             mapping_simulator.plot_dag_networkx(
                 dag, file_html_out="output/dag_run_report.html"
             )
