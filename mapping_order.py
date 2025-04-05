@@ -395,12 +395,11 @@ class MappingDependencies:
             file_html_out (str): file path that the result should be written to
         """
         net = Network("945px", "1917px", directed=True, layout=True)
+        net.from_nx(dag)
         net.options.layout.hierarchical.sortMethod = "directed"
         net.options.physics.solver = "hierarchicalRepulsion"
         net.options.edges.smooth = False
         net.options.interaction.navigationButtons = True
-        net.from_nx(dag)
-
         net.toggle_physics(True)
         net.show(file_html_out, notebook=False)
 
