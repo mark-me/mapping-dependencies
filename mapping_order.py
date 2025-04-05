@@ -382,6 +382,7 @@ class MappingDependencies:
                 """
                 )
         # Set edge attributes
+        # FIXME: does nothing at the moment, lost in igraph to networkx conversion
         for edge in dag.es:
             edge["color"] = "darkslategrey"
             edge["shadow"] = True
