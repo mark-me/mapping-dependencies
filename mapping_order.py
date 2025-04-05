@@ -290,7 +290,7 @@ class MappingDependencies:
 
         node_colors = {
             "start": "gold",
-            "intermediate": "darkorange",
+            "intermediate": "teal",
             "end": "seagreen",
             "mapping": "slateblue",
             "undetermined": "red",
