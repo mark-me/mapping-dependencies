@@ -405,8 +405,8 @@ def main():
 
     for i, file_RETW in enumerate(lst_files_RETW):
         # Add file to parser
-        success = dep_parser.add_RETW_file(file_RETW=file_RETW)
-        if success:
+        if dep_parser.add_RETW_file(file_RETW=file_RETW):
+            logger.info(f"Added RETW file '{file_RETW}'")
             # Write mapping
             lst_mapping_order = dep_parser.get_mapping_order()
             with open(
@@ -421,7 +421,9 @@ def main():
             dep_parser.plot_dag_networkx(
                 dag, file_html_out=f"output/dag_structure_{str(i)}.html"
             )
-
+        else:
+            logger.error(f"Failed to add RETW file '{file_RETW}'")
+            return
 
 if __name__ == "__main__":
     main()
