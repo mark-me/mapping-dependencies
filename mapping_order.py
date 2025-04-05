@@ -8,6 +8,7 @@ from log_config import logging
 
 logger = logging.getLogger(__name__)
 
+# TODO: Keeping a trail of files added to the dependencies
 
 class MappingDependencies:
     def __init__(self):
