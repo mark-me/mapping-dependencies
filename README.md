@@ -1,10 +1,10 @@
 # Mapping dependency parser
 
-Builds insight in the network of entities and mappings by using RETW ouput files in order to:
+Builds insight in the network of entities and mappings by using RETW ouput files in order to determine:
 
-1. Determine if there is no feedback in the ETL (ETL should be acyclic)
-2. Determine what the ordering of the mapping should be in an ETL job
-3. Determine what the consequences are if an ETL step failed
+* the ETL process has no loops (ETL should be acyclic),
+* the ordering of mappings for the ETL orchestrator and
+* the consequences when a step in ETL process fails.
 
 ## Mapping order
 
