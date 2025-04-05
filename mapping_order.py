@@ -409,7 +409,7 @@ def main():
             # Write mapping
             lst_mapping_order = dep_parser.get_mapping_order()
             with open(
-                f"output/mapping_order_iteration_{str(i)}.jsonl", "w", encoding="utf-8"
+                f"output/mapping_order_{str(i)}.jsonl", "w", encoding="utf-8"
             ) as file:
                 for mapping in lst_mapping_order:
                     json.dump(mapping, file)
@@ -418,7 +418,7 @@ def main():
             # Write HTML overview
             dag = dep_parser.get_dag_networkx()
             dep_parser.plot_dag_networkx(
-                dag, file_html_out=f"output/dag_iteration_{str(i)}.html"
+                dag, file_html_out=f"output/dag_structure_{str(i)}.html"
             )
 
 
