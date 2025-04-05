@@ -143,6 +143,33 @@ class MappingDependencies:
             lst_nodes.append(node)
         return lst_nodes
 
+    def get_mapping_order(self) -> list:
+        """Returns mappings and order of running (could be parallel, in which case other subsorting should be implemented if needed)
+
+        Returns:
+            list: List of mappings with order
+        """
+        lst_mappings = []
+        dag = self.get_dag()
+        for node in dag.vs:
+            if node["role"] == "mapping":
+                lst_mappings.append(
+                    {
+                        "RunOrder": node["run_order"],
+                        "Id": node["name"],
+                        "Name": node["Name"],
+                        "Code": node["Code"],
+                        "CreationDate": node["CreationDate"],
+                        "Creator": node["Creator"],
+                        "ModificationDate": node["ModificationDate"],
+                        "Modifier": node["Modifier"],
+                    }
+                )
+        # Sort the list of mappings by run order and the id
+        sorting = sorted([(i['RunOrder'], i['Id'], i) for i in lst_mappings])
+        lst_mappings = [i[2] for i in sorting]
+        return lst_mappings
+
     def get_dag(self) -> ig.Graph:
         """Turns mappings into a Directed Graph and add derived data
 
@@ -233,8 +260,12 @@ class MappingDependencies:
 
         # Set all end entities at highest level
         level_max = max(
-                [dag.vs[vtx]["level"] for vtx in lst_vertices if dag.vs[vtx]["position"] == "end"]
-            )
+            [
+                dag.vs[vtx]["level"]
+                for vtx in lst_vertices
+                if dag.vs[vtx]["position"] == "end"
+            ]
+        )
         for i in range(dag.vcount()):
             if dag.vs[i]["position"] == "end":
                 dag.vs[i]["level"] = level_max
@@ -377,6 +408,7 @@ if __name__ == "__main__":
     for file_RETW in lst_files_RETW:
         success = dep_parser.add_RETW_file(file=file_RETW)
         if success:
+            lst_mapping_order = dep_parser.get_mapping_order()
             graph = dep_parser.get_dag()
             dep_parser.plot_dag(graph, "output/dag.png")
             dag = dep_parser.get_dag_networkx()
