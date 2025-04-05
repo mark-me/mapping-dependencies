@@ -157,7 +157,7 @@ class MappingDependencies:
                 dict_mapping["RunOrder"] = node["run_order"]
                 lst_mappings.append(dict_mapping)
         # Sort the list of mappings by run order and the id
-        sorting = sorted([(i['RunOrder'], i['Id'], i) for i in lst_mappings])
+        sorting = sorted([(i["RunOrder"], i["Id"], i) for i in lst_mappings])
         lst_mappings = [i[2] for i in sorting]
         return lst_mappings
 
@@ -402,14 +402,25 @@ def main():
     lst_files_RETW = ["output/Usecase_Aangifte_Behandeling.json"]
     dep_parser = MappingDependencies()
 
-    for file_RETW in lst_files_RETW:
+    for i, file_RETW in enumerate(lst_files_RETW):
+        # Add file to parser
         success = dep_parser.add_RETW_file(file_RETW=file_RETW)
         if success:
+            # Write mapping
             lst_mapping_order = dep_parser.get_mapping_order()
-            graph = dep_parser.get_dag()
-            dep_parser.plot_dag(graph, "output/dag.png")
+            with open(
+                f"output/mapping_order_iteration_{str(i)}.jsonl", "w", encoding="utf-8"
+            ) as file:
+                for mapping in lst_mapping_order:
+                    json.dump(mapping, file)
+                    file.write("\n")
+
+            # Write HTML overview
             dag = dep_parser.get_dag_networkx()
-            dep_parser.plot_dag_networkx(dag, file_html_out="output/dag.html")
+            dep_parser.plot_dag_networkx(
+                dag, file_html_out=f"output/dag_iteration_{str(i)}.html"
+            )
+
 
 if __name__ == "__main__":
     main()
