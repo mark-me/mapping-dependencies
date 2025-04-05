@@ -345,25 +345,13 @@ class MappingDependencies:
 
     def get_dag_networkx(self) -> nx.DiGraph:
         dag = self.get_dag()
+        dag = self._set_pyvis_attributes(dag=dag)
         network = self._igraph_to_networkx(dag=dag)
         return network
 
-    def plot_dag_networkx(self, dag: nx.DiGraph, file_html_out: str) -> None:
-        """Create a html file with a graphical representation of a networkx graph
-
-        Args:
-            dag (nx.DiGraph): Networkx DAG
-            file_html_out (str): file path that the result should be written to
-        """
-        net = Network("945px", "1917px", directed=True, layout=True)
-        net.options.layout.hierarchical.sortMethod = "directed"
-        net.options.physics.solver = "hierarchicalRepulsion"
-        net.options.edges.smooth = False
-        net.options.interaction.navigationButtons = True
-        net.from_nx(dag)
-
+    def _set_pyvis_attributes(self, dag: ig.Graph) -> ig.Graph:
         # Set visual node properties
-        for node in net.nodes:
+        for node in dag.vs:
             node["shape"] = "database" if node["role"] == "entity" else "hexagon"
             node["shadow"] = True
             node["label"] = str(node["run_order"]) if node["run_order"] >= 0 else ""
@@ -393,10 +381,26 @@ class MappingDependencies:
                 Is Target: {node["IsDocumentModel"]}
                 """
                 )
-
-        for edge in net.edges:
+        # Set edge attributes
+        for edge in dag.es:
             edge["color"] = "darkslategrey"
             edge["shadow"] = True
+        return dag
+
+    def plot_dag_networkx(self, dag: nx.DiGraph, file_html_out: str) -> None:
+        """Create a html file with a graphical representation of a networkx graph
+
+        Args:
+            dag (nx.DiGraph): Networkx DAG
+            file_html_out (str): file path that the result should be written to
+        """
+        net = Network("945px", "1917px", directed=True, layout=True)
+        net.options.layout.hierarchical.sortMethod = "directed"
+        net.options.physics.solver = "hierarchicalRepulsion"
+        net.options.edges.smooth = False
+        net.options.interaction.navigationButtons = True
+        net.from_nx(dag)
+
         net.toggle_physics(True)
         net.show(file_html_out, notebook=False)
 
