@@ -248,15 +248,29 @@ class MappingDependencies:
         return dag
 
     def _dag_node_hierarchy_level(self, dag: ig.Graph) -> ig.Graph:
-        """Enrich the DAG with the level in the hierarchy where vertices should be plotted
+        """Enrich the DAG with the level in the hierarchy where vertices should be plotted.
+
+        Determines and sets the 'level' attribute for each vertex in the DAG, used for visualization.
 
         Args:
-            dag (ig.Graph): DAG that describes entities and mappings
+            dag (ig.Graph): DAG that describes entities and mappings.
 
         Returns:
-            ig.Graph: DAG where the vertices are enriched with the attribute 'level'
+            ig.Graph: DAG where the vertices are enriched with the attribute 'level'.
         """
-        # Determine level by mappings in the preceding network
+        dag = self._calculate_node_levels(dag)
+        dag = self._set_max_end_node_level(dag)
+        return dag
+
+    def _calculate_node_levels(self, dag: ig.Graph) -> ig.Graph:
+        """Calculate and set the initial level for each node in the DAG.
+
+        Args:
+            dag (ig.Graph): The DAG to process.
+
+        Returns:
+            ig.Graph: The DAG with initial node levels set.
+        """
         lst_level = []
         for i in range(dag.vcount()):
             lst_vertices = dag.subcomponent(dag.vs[i], mode="in")
@@ -271,17 +285,25 @@ class MappingDependencies:
                 level += 2
             lst_level.append(level)
         dag.vs["level"] = lst_level
+        return dag
 
-        # Set all end entities at highest level
+    def _set_max_end_node_level(self, dag: ig.Graph) -> ig.Graph:
+        """Set the level of all end nodes to the maximum level.
+
+        Args:
+            dag (ig.Graph): The DAG to process.
+
+        Returns:
+            ig.Graph: The DAG with end node levels adjusted.
+        """
         level_max = max(
             dag.vs[vtx]["level"]
-            for vtx in lst_vertices
+            for vtx in range(dag.vcount()) # Iterate over all vertices to find the true max level.
             if dag.vs[vtx]["position"] == "end"
         )
         for i in range(dag.vcount()):
             if dag.vs[i]["position"] == "end":
                 dag.vs[i]["level"] = level_max
-
         return dag
 
     def _set_dag_visual_attributes(self, dag: ig.Graph) -> ig.Graph:
