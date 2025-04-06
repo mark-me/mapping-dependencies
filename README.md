@@ -21,7 +21,7 @@ The asterisks in the filename indicates the iteration of each RETW file added to
 
 ## ETL job failures
 
-A simulation a failing ETL process can be simulated using ```mapping_simulator.py```. The list with filenames in the ```main``` function's variable ```lst_files_RETW``` can be adjusted. In the same function you can 'simulate' an ETL-step failure by adjusting the list ```id_entity_failed```; although the variable name suggests only entities can fail, you can also set this ID to a mapping.
+A simulation a failing ETL process can be simulated using ```mapping_simulator.py```. The list with filenames in the ```main``` function's variable ```lst_files_RETW``` can be adjusted. In the same function you can 'simulate' an ETL-step failure by adjusting the list ```lst_id_entities_failed```; although the variable name suggests only entities can fail, you can also set this ID to a mapping.
 
 ### Output
 
