@@ -98,6 +98,7 @@ def main():
     lst_id_entities_failed = ["o71", "o207"]
 
     mapping_simulator = MappingSimulator()
+
     # Adding RETW files to generate complete ETL DAG
     for file_RETW in lst_files_RETW:
         if mapping_simulator.add_RETW_file(file_RETW=file_RETW):
@@ -108,10 +109,12 @@ def main():
 
     # Set failed node
     dag = mapping_simulator.set_entities_failed(lst_id_entities_failed)
+
     # Create fallout report file
     dict_fallout = mapping_simulator.get_report_fallout()
     with open("output/dag_run_fallout.json", "w", encoding="utf-8") as file:
         json.dump(dict_fallout, file, indent=4)
+
     # Create fallout visualization
     mapping_simulator.plot_dag_networkx(dag, file_html_out="output/dag_run_report.html")
 
