@@ -158,7 +158,8 @@ class MappingDependencies:
         return lst_nodes
 
     def get_mapping_order(self) -> list:
-        """Returns mappings and order of running (could be parallel, in which case other subsorting should be implemented if needed)
+        """Returns mappings and order of running (could be parallel,
+        in which case other subsorting should be implemented if needed)
 
         Returns:
             list: List of mappings with order
@@ -195,7 +196,8 @@ class MappingDependencies:
     def _dag_node_position(self, dag: ig.Graph) -> ig.Graph:
         """Determine and set the position of each node in the DAG.
 
-        Determines if entities are start, intermediate, or end nodes based on their in-degree and out-degree, and adds a 'position' attribute to the DAG vertices.
+        Determines if entities are start, intermediate, or end nodes based on their in-degree and out-degree,
+        and adds a 'position' attribute to the DAG vertices.
 
         Args:
             dag (ig.Graph): The DAG to process.
@@ -228,7 +230,8 @@ class MappingDependencies:
             dag (ig.Graph): DAG that describes entities and mappings
 
         Returns:
-            ig.Graph: DAG where the vertices are enriched with the attribute 'run_order', entity vertices get the value -1
+            ig.Graph: DAG where the vertices are enriched with the attribute 'run_order',
+            entity vertices get the value -1
         """
         lst_mapping_order = []
         for i in range(dag.vcount()):
@@ -362,7 +365,8 @@ class MappingDependencies:
     def _set_nodes_color(self, dag: ig.Graph) -> ig.Graph:
         """Set the color of each node in the DAG based on its role and position.
 
-        Assigns colors to nodes for visual differentiation based on whether they are mappings or entities, and their position in the DAG (start, intermediate, end).
+        Assigns colors to nodes for visual differentiation based on whether they are mappings or entities,
+        and their position in the DAG (start, intermediate, end).
 
         Args:
             dag (ig.Graph): The DAG to process.
@@ -438,6 +442,14 @@ class MappingDependencies:
         return dag
 
     def _set_pyvis_node_tooltip(self, node: ig.Vertex):
+        """Set the tooltip for a node in the pyvis visualization.
+
+        Sets the 'title' attribute of the node, which is used as a tooltip in pyvis,
+        containing detailed information about the node.
+
+        Args:
+            node (ig.Vertex): The node to set the tooltip for.
+        """
         node["title"] = f"""Type: {node["role"]}\n
                     Id: {node["name"]}
                     Name: {node["Name"]}
@@ -485,6 +497,11 @@ class MappingDependencies:
 
 
 def main():
+    """Main function to process RETW files and generate mapping order and DAG visualizations.
+
+    Processes a list of RETW files, adds them to a MappingDependencies object,
+    and generates the mapping order and DAG visualization for each iteration of adding a file.
+    """
     lst_files_RETW = ["output/Usecase_Aangifte_Behandeling.json"]
     dep_parser = MappingDependencies()
 
