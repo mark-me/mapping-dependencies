@@ -2,9 +2,9 @@
 
 Builds insights in the network of entities and mappings, by using RETW ouput files, to determine:
 
-* whether the ETL flow has no loops (ETL-flows should be [acyclic](https://en.wikipedia.org/wiki/Directed_acyclic_graph)),
 * what the ordering of mappings should be for the ETL orchestrator and
 * the consequences of a failure of a step in ETL process.
+* whether the ETL flow has no closed loops (ETL-flows should be [acyclic](https://en.wikipedia.org/wiki/Directed_acyclic_graph)),
 
 ## Mapping order
 
