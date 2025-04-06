@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 # TODO: Keeping a trail of files added to the dependencies
 
+
 class MappingDependencies:
     def __init__(self):
         """Initialize MappingDependencies.
@@ -185,7 +186,6 @@ class MappingDependencies:
             logger.error(
                 "Graph is cyclic, ETL mappings should always be acyclic! https://en.wikipedia.org/wiki/Directed_acyclic_graph"
             )
-
         dag = self._dag_node_position(dag=dag)
         dag = self._dag_mapping_run_order(dag=dag)
         dag = self._dag_node_hierarchy_level(dag=dag)
@@ -298,7 +298,9 @@ class MappingDependencies:
         """
         level_max = max(
             dag.vs[vtx]["level"]
-            for vtx in range(dag.vcount()) # Iterate over all vertices to find the true max level.
+            for vtx in range(
+                dag.vcount()
+            )  # Iterate over all vertices to find the true max level.
             if dag.vs[vtx]["position"] == "end"
         )
         for i in range(dag.vcount()):
@@ -315,13 +317,59 @@ class MappingDependencies:
         Returns:
             ig.Graph: _description_
         """
-        # Assign label to nodes
+        dag = self._set_nodes_label(dag=dag)
+        dag = self._set_nodes_color(dag=dag)
+        dag = self._set_nodes_shape(dag=dag)
+        return dag
+
+    def _set_nodes_label(self, dag: ig.Graph) -> ig.Graph:
+        """Set the label for each node in the DAG.
+
+        Assigns labels to nodes based on their run order and name.
+        Mappings have their run order prepended to the label.
+
+        Args:
+            dag (ig.Graph): The DAG to process.
+
+        Returns:
+            ig.Graph: The DAG with node labels set.
+        """
         for i, order in enumerate(dag.vs["run_order"]):
             if order >= 0:
                 dag.vs[i]["label"] = str(order) + "\n" + dag.vs[i]["Name"]
             else:
                 dag.vs[i]["label"] = dag.vs[i]["Name"]
+        return dag
 
+    def _set_nodes_shape(self, dag: ig.Graph) -> ig.Graph:
+        """Set the shape of each node in the DAG based on its role.
+
+        Assigns shapes to nodes for visual differentiation based on whether they are mappings or entities.
+
+        Args:
+            dag (ig.Graph): The DAG to process.
+
+        Returns:
+            ig.Graph: The DAG with node shapes set.
+        """
+        node_shapes = {
+            "entity": "circle",
+            "mapping": "hexagon",
+        }
+        dag.vs["shape"] = [node_shapes[type_key] for type_key in dag.vs["role"]]
+        return dag
+
+    def _set_nodes_color(self, dag: ig.Graph) -> ig.Graph:
+        """Set the color of each node in the DAG based on its role and position.
+
+        Assigns colors to nodes for visual differentiation based on whether they are mappings or entities, and their position in the DAG (start, intermediate, end).
+
+        Args:
+            dag (ig.Graph): The DAG to process.
+
+        Returns:
+            ig.Graph: The DAG with node colors set.
+        """
         node_colors = {
             "start": "gold",
             "intermediate": "yellowgreen",
@@ -334,11 +382,6 @@ class MappingDependencies:
                 dag.vs[i]["color"] = node_colors[dag.vs[i]["role"]]
             else:
                 dag.vs[i]["color"] = node_colors[dag.vs[i]["position"]]
-        node_shapes = {
-            "entity": "circle",
-            "mapping": "hexagon",
-        }
-        dag.vs["shape"] = [node_shapes[type_key] for type_key in dag.vs["role"]]
         return dag
 
     def plot_dag(self, dag: ig.Graph, file_png_out: str) -> None:
@@ -378,8 +421,7 @@ class MappingDependencies:
     def get_dag_networkx(self) -> nx.DiGraph:
         dag = self.get_dag()
         dag = self._set_pyvis_attributes(dag=dag)
-        network = self._igraph_to_networkx(dag=dag)
-        return network
+        return self._igraph_to_networkx(dag=dag)
 
     def _set_pyvis_attributes(self, dag: ig.Graph) -> ig.Graph:
         # Set visual node properties
@@ -387,13 +429,22 @@ class MappingDependencies:
             node["shape"] = "database" if node["role"] == "entity" else "hexagon"
             node["shadow"] = True
             node["label"] = str(node["run_order"]) if node["run_order"] >= 0 else ""
-            node["title"] = f"""Type: {node["role"]}\n
+            self._set_pyvis_node_tooltip(node)
+        # Set edge attributes
+        # FIXME: does nothing at the moment, lost in igraph to networkx conversion
+        for edge in dag.es:
+            edge["color"] = "darkslategrey"
+            edge["shadow"] = True
+        return dag
+
+    def _set_pyvis_node_tooltip(self, node: ig.Vertex):
+        node["title"] = f"""Type: {node["role"]}\n
                     Id: {node["name"]}
                     Name: {node["Name"]}
                     Code: {node["Code"]}
                 """
-            if node["role"] == "mapping":
-                node["title"] = (
+        if node["role"] == "mapping":
+            node["title"] = (
                     node["title"]
                     + f"""
                     Run order: {str(node["run_order"])}
@@ -403,8 +454,8 @@ class MappingDependencies:
                     Modifier: {node["Modifier"]}
                 """
                 )
-            else:
-                node["title"] = (
+        else:
+            node["title"] = (
                     node["title"]
                     + f"""
                 Id Model: {node["IdModel"]}
@@ -413,12 +464,6 @@ class MappingDependencies:
                 Is Target: {node["IsDocumentModel"]}
                 """
                 )
-        # Set edge attributes
-        # FIXME: does nothing at the moment, lost in igraph to networkx conversion
-        for edge in dag.es:
-            edge["color"] = "darkslategrey"
-            edge["shadow"] = True
-        return dag
 
     def plot_dag_networkx(self, dag: nx.DiGraph, file_html_out: str) -> None:
         """Create a html file with a graphical representation of a networkx graph
@@ -464,6 +509,7 @@ def main():
         else:
             logger.error(f"Failed to add RETW file '{file_RETW}'")
             return
+
 
 if __name__ == "__main__":
     main()
