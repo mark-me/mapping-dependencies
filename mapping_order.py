@@ -12,6 +12,10 @@ logger = logging.getLogger(__name__)
 
 class MappingDependencies:
     def __init__(self):
+        """Initialize MappingDependencies.
+
+        Initializes the nodes, links, and key lists for mappings and entities.
+        """
         self.nodes = []
         self.links = []
         self.keys_mapping = [
@@ -115,11 +119,16 @@ class MappingDependencies:
         return node
 
     def _create_target_node(self, entity_target: dict, entity_keys: list) -> dict:
-        """_summary_
+        """Create a node for the target entity of a mapping.
+
+        Creates a node dictionary for the target entity, including relevant entity data.
 
         Args:
-            dict_entity_target (dict): Data on the target entity
-            lst_entity_keys (list): Entity data to include in the node
+            entity_target (dict): Data on the target entity.
+            entity_keys (list): Entity data to include in the node.
+
+        Returns:
+            dict: Node data for the target entity.
         """
         node = {key: entity_target[key] for key in entity_keys if key in entity_target}
         node["name"] = node["Id"]
@@ -132,6 +141,9 @@ class MappingDependencies:
         Args:
             entity_sources (list): Dictionaries for the source entities
             entity_keys (list): Properties of an entity that should be added as node attributes
+
+        Returns:
+            list: Nodes with data for input entities
         """
         lst_nodes = []
         for source in entity_sources:
@@ -174,7 +186,24 @@ class MappingDependencies:
                 "Graph is cyclic, ETL mappings should always be acyclic! https://en.wikipedia.org/wiki/Directed_acyclic_graph"
             )
 
-        # Determine if entities are intermediates
+
+
+        dag = self._dag_mapping_run_order(dag=dag)
+        dag = self._dag_node_hierarchy_level(dag=dag)
+        dag = self._set_dag_visual_attributes(dag=dag)
+        return dag
+
+    def _dag_node_position(self, dag: ig.Graph) -> ig.Graph:
+        """Determine and set the position of each node in the DAG.
+
+        Determines if entities are start, intermediate, or end nodes based on their in-degree and out-degree, and adds a 'position' attribute to the DAG vertices.
+
+        Args:
+            dag (ig.Graph): The DAG to process.
+
+        Returns:
+            ig.Graph: The DAG with node positions set.
+        """
         dag.vs["qty_out"] = dag.degree(dag.vs, mode="out")
         dag.vs["qty_in"] = dag.degree(dag.vs, mode="in")
         lst_entity_position = []
@@ -191,10 +220,6 @@ class MappingDependencies:
                 position = "undetermined"
             lst_entity_position.append(position)
         dag.vs["position"] = lst_entity_position
-
-        dag = self._dag_mapping_run_order(dag=dag)
-        dag = self._dag_node_hierarchy_level(dag=dag)
-        dag = self._set_dag_visual_attributes(dag=dag)
         return dag
 
     def _dag_mapping_run_order(self, dag: ig.Graph) -> ig.Graph:
@@ -216,8 +241,10 @@ class MappingDependencies:
             lst_mapping_order.append(len(predecessors_mapping) - 1)
         # Assign valid run order to mappings only
         lst_run_order = []
-        for run_order, role in zip(lst_mapping_order, dag.vs["role"]):
-            lst_run_order.append(run_order if role == "mapping" else -1)
+        lst_run_order.extend(
+            run_order if role == "mapping" else -1
+            for run_order, role in zip(lst_mapping_order, dag.vs["role"])
+        )
         dag.vs["run_order"] = lst_run_order
         return dag
 
@@ -244,19 +271,17 @@ class MappingDependencies:
             elif dag.vs[i]["role"] == "entity" and level == 1:
                 level = 2
             elif dag.vs[i]["role"] == "mapping" and level > 1:
-                level = level + 1
+                level += 1
             elif dag.vs[i]["role"] == "entity" and level > 1:
-                level = level + 2
+                level += 2
             lst_level.append(level)
         dag.vs["level"] = lst_level
 
         # Set all end entities at highest level
         level_max = max(
-            [
-                dag.vs[vtx]["level"]
-                for vtx in lst_vertices
-                if dag.vs[vtx]["position"] == "end"
-            ]
+            dag.vs[vtx]["level"]
+            for vtx in lst_vertices
+            if dag.vs[vtx]["position"] == "end"
         )
         for i in range(dag.vcount()):
             if dag.vs[i]["position"] == "end":
@@ -323,15 +348,13 @@ class MappingDependencies:
         # Convert nodes
         lst_nodes_igraph = dag.get_vertex_dataframe().to_dict("records")
         lst_nodes = []
-        for node in lst_nodes_igraph:
-            lst_nodes.append((node["name"], node))
+        lst_nodes.extend((node["name"], node) for node in lst_nodes_igraph)
         dag_nx.add_nodes_from(lst_nodes)
 
         # Convert edges
         lst_edges_igraph = dag.get_edge_dataframe().to_dict("records")
         lst_edges = []
-        for edge in lst_edges_igraph:
-            lst_edges.append((edge["source"], edge["target"]))
+        lst_edges.extend((edge["source"], edge["target"]) for edge in lst_edges_igraph)
         dag_nx.add_edges_from(lst_edges)
         return dag_nx
 
