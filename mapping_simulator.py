@@ -11,16 +11,22 @@ logger = logging.getLogger(__name__)
 
 class MappingSimulator(MappingDependencies):
     def __init__(self):
+        """Initialize the MappingSimulator.
+
+        Initializes the DAG, list of failed nodes, and list of affected nodes.
+        """
         super().__init__()
         self.dag = ig.Graph()
         self.nodes_failed = []
         self.nodes_affected = []
 
     def _derive_affected(self) -> ig.Graph:
-        """Changes the DAG to describe the failure of an ETL step and it's consquences
+        """Update the DAG to reflect the impact of failed nodes.
+
+        Identifies and marks nodes affected by the failures, updating their visual attributes (color, shape) in the DAG.
 
         Returns:
-            ig.Graph: _description_
+            ig.Graph: The updated DAG.
         """
         nodes_affected = []
         for node_failed in self.nodes_failed:
