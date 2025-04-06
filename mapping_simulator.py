@@ -8,12 +8,13 @@ from mapping_order import MappingDependencies
 
 logger = logging.getLogger(__name__)
 
+
 class MappingSimulator(MappingDependencies):
     def __init__(self):
         super().__init__()
         self.dag = ig.Graph()
-        self.node_failed = -1
-        self.node_affected = []
+        self.nodes_failed = []
+        self.nodes_affected = []
 
     def _derive_affected(self) -> ig.Graph:
         """Changes the DAG to describe the failure of an ETL step and it's consquences
@@ -21,18 +22,23 @@ class MappingSimulator(MappingDependencies):
         Returns:
             ig.Graph: _description_
         """
-        self.node_affected = self.dag.subcomponent(self.node_failed, mode="out")
+        nodes_affected = []
+        for node_failed in self.nodes_failed:
+            nodes_affected = nodes_affected + self.dag.subcomponent(
+                node_failed, mode="out"
+            )
+        self.nodes_affected = list(set(nodes_affected))
         # Set visual attributes accordingly
         self._set_pyvis_attributes(dag=self.dag)
-        for id_node in self.node_affected:
+        for id_node in self.nodes_affected:
             node = self.dag.vs[id_node]
-            if id_node == self.node_failed:
+            if id_node in self.nodes_failed:
                 node["color"] = "red"
                 node["shape"] = "star"
             else:
                 node["color"] = "tomato"
 
-    def set_entity_failed(self, id: str) -> nx.DiGraph:
+    def set_entities_failed(self, node_ids: list) -> nx.DiGraph:
         """Sets the status of an entity (or mapping) to failed, and derives the consequences in the ETL DAG.
 
         Args:
@@ -42,7 +48,8 @@ class MappingSimulator(MappingDependencies):
             nx.DiGraph: A networkx graph with the failure and it's consequences.
         """
         self.dag = self.get_dag()
-        self.node_failed = self.dag.vs.find(name=id).index
+        for node_id in node_ids:
+            self.nodes_failed.append(self.dag.vs.find(name=node_id).index)
         self._derive_affected()
         network = self._igraph_to_networkx(dag=self.dag)
         return network
@@ -59,11 +66,11 @@ class MappingSimulator(MappingDependencies):
         dict_results = {}
         lst_failed = []
         lst_affected = []
-        for id_node in self.node_affected:
+        for id_node in self.nodes_affected:
             node = self.dag.vs[id_node]
             if node["role"] == filter_role:
                 dict_mapping = {key: node[key] for key in self.keys_mapping}
-                if id_node == self.node_failed:
+                if id_node in self.nodes_failed:
                     lst_failed.append(dict_mapping)
                 else:
                     lst_affected.append(dict_mapping)
@@ -88,7 +95,7 @@ class MappingSimulator(MappingDependencies):
 
 def main():
     lst_files_RETW = ["output/Usecase_Aangifte_Behandeling.json"]
-    id_entity_failed = "o71"
+    lst_id_entities_failed = ["o71", "o207"]
 
     mapping_simulator = MappingSimulator()
     # Adding RETW files to generate complete ETL DAG
@@ -100,15 +107,13 @@ def main():
             return
 
     # Set failed node
-    dag = mapping_simulator.set_entity_failed(id=id_entity_failed)
+    dag = mapping_simulator.set_entities_failed(lst_id_entities_failed)
     # Create fallout report file
     dict_fallout = mapping_simulator.get_report_fallout()
     with open("output/dag_run_fallout.json", "w", encoding="utf-8") as file:
         json.dump(dict_fallout, file, indent=4)
     # Create fallout visualization
-    mapping_simulator.plot_dag_networkx(
-        dag, file_html_out="output/dag_run_report.html"
-    )
+    mapping_simulator.plot_dag_networkx(dag, file_html_out="output/dag_run_report.html")
 
 
 if __name__ == "__main__":
