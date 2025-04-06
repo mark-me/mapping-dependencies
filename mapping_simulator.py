@@ -32,7 +32,7 @@ class MappingSimulator(MappingDependencies):
         self._set_pyvis_attributes(dag=self.dag)
         for id_node in self.nodes_affected:
             node = self.dag.vs[id_node]
-            if id_node == self.nodes_failed:
+            if id_node in self.nodes_failed:
                 node["color"] = "red"
                 node["shape"] = "star"
             else:
