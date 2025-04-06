@@ -186,8 +186,7 @@ class MappingDependencies:
                 "Graph is cyclic, ETL mappings should always be acyclic! https://en.wikipedia.org/wiki/Directed_acyclic_graph"
             )
 
-
-
+        dag = self._dag_node_position(dag=dag)
         dag = self._dag_mapping_run_order(dag=dag)
         dag = self._dag_node_hierarchy_level(dag=dag)
         dag = self._set_dag_visual_attributes(dag=dag)
@@ -264,11 +263,7 @@ class MappingDependencies:
             level = len(
                 [vtx for vtx in lst_vertices if dag.vs[vtx]["role"] == "mapping"]
             )
-            if dag.vs[i]["role"] == "mapping" and level == 1:
-                level = 1
-            elif dag.vs[i]["role"] == "entity" and level == 0:
-                level = 0
-            elif dag.vs[i]["role"] == "entity" and level == 1:
+            if dag.vs[i]["role"] == "entity" and level == 1:
                 level = 2
             elif dag.vs[i]["role"] == "mapping" and level > 1:
                 level += 1
