@@ -29,7 +29,7 @@ class MappingSimulator(MappingDependencies):
                 self.dag.vs[id_node]["color"] = "red"
                 self.dag.vs[id_node]["shape"] = "star"
             else:
-                self.dag.vs[id_node]["color"] = "darkorange"
+                self.dag.vs[id_node]["color"] = "tomato"
 
     def set_entity_failed(self, id: str) -> nx.DiGraph:
         """Sets the status of an entity (or mapping) to failed, and derives the consequences in the ETL DAG.

@@ -282,8 +282,8 @@ class MappingDependencies:
 
         node_colors = {
             "start": "gold",
-            "intermediate": "mediumaquamarine",
-            "end": "limegreen",
+            "intermediate": "yellowgreen",
+            "end": "lawngreen",
             "mapping": "slateblue",
             "undetermined": "red",
         }
