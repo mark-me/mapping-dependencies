@@ -484,7 +484,7 @@ class MappingDependencies:
             dag (nx.DiGraph): Networkx DAG
             file_html_out (str): file path that the result should be written to
         """
-        net = Network("945px", "1917px", directed=True, layout=True)
+        net = Network("900px", "1917px", directed=True, layout=True)
         net.from_nx(dag)
         net.options.layout.hierarchical.sortMethod = "directed"
         net.options.physics.solver = "hierarchicalRepulsion"
