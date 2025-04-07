@@ -1,3 +1,4 @@
+from collections import defaultdict
 import json
 
 import igraph as ig
@@ -169,7 +170,7 @@ class MappingDependencies:
         for node in dag.vs:
             if node["role"] == "mapping":
                 dict_mapping = {key: node[key] for key in self.keys_mapping}
-                dict_mapping["RunOrder"] = node["run_order"]
+                dict_mapping["RunOrder"] = node["run_level"]
                 lst_mappings.append(dict_mapping)
         # Sort the list of mappings by run order and the id
         sorting = sorted([(i["RunOrder"], i["Id"], i) for i in lst_mappings])
@@ -188,7 +189,7 @@ class MappingDependencies:
                 "Graph is cyclic, ETL mappings should always be acyclic! https://en.wikipedia.org/wiki/Directed_acyclic_graph"
             )
         dag = self._dag_node_position(dag=dag)
-        dag = self._dag_mapping_run_order(dag=dag)
+        dag = self._dag_mapping_run_level(dag=dag)
         dag = self._dag_node_hierarchy_level(dag=dag)
         dag = self._set_dag_visual_attributes(dag=dag)
         return dag
@@ -223,14 +224,14 @@ class MappingDependencies:
         dag.vs["position"] = lst_entity_position
         return dag
 
-    def _dag_mapping_run_order(self, dag: ig.Graph) -> ig.Graph:
+    def _dag_mapping_run_level(self, dag: ig.Graph) -> ig.Graph:
         """Erich the DAG with the sequence the mappings should run in
 
         Args:
             dag (ig.Graph): DAG that describes entities and mappings
 
         Returns:
-            ig.Graph: DAG where the vertices are enriched with the attribute 'run_order',
+            ig.Graph: DAG where the vertices are enriched with the attribute 'run_level',
             entity vertices get the value -1
         """
         lst_mapping_order = []
@@ -242,12 +243,47 @@ class MappingDependencies:
             ]
             lst_mapping_order.append(len(predecessors_mapping) - 1)
         # Assign valid run order to mappings only
-        lst_run_order = []
-        lst_run_order.extend(
-            run_order if role == "mapping" else -1
-            for run_order, role in zip(lst_mapping_order, dag.vs["role"])
+        lst_run_level = []
+        lst_run_level.extend(
+            run_level if role == "mapping" else -1
+            for run_level, role in zip(lst_mapping_order, dag.vs["role"])
         )
-        dag.vs["run_order"] = lst_run_order
+        dag.vs["run_level"] = lst_run_level
+        dag = self._mapping_stages(dag=dag)
+        return dag
+
+    def _mapping_stages(self, dag: ig.Graph) -> ig.Graph:
+        """Determine mapping stages for each level
+
+        Args:
+            dag (ig.Graph): DAG describing the ETL
+
+        Returns:
+            ig.Graph: ETL stages for a level added in the mapping vertex attribute 'stage'
+        """
+        nodes_mapping = dag.vs.select(role_eq="mapping")
+
+        # Determine stages by run level
+        run_level_unique = list(set([node["run_level"] for node in nodes_mapping]))
+        run_level_unique = [0]
+        for run_level in run_level_unique:
+            mappings = nodes_mapping.select(run_level_eq=run_level)
+            mapping_sources = [
+                {"mapping": mapping["Id"], "sources": dag.predecessors(mapping)}
+                for mapping in mappings
+            ]
+            # Create mapping conflict graph
+            graph_conflicts = ig.Graph()
+            for i, a in enumerate(mapping_sources):
+                for j, b in enumerate(mapping_sources):
+                    if i >= j:
+                        continue
+                    node_source = graph_conflicts.add_vertex(a["mapping"])
+                    node_target = graph_conflicts.add_vertex(b["mapping"])
+                    if set(a["sources"]) & set(b["sources"]):
+                        graph_conflicts.add_edge(source=node_source.index, target=node_target.index)
+
+        ig.plot(graph_conflicts, "output/mapping_conflict.png")
         return dag
 
     def _dag_node_hierarchy_level(self, dag: ig.Graph) -> ig.Graph:
@@ -337,7 +373,7 @@ class MappingDependencies:
         Returns:
             ig.Graph: The DAG with node labels set.
         """
-        for i, order in enumerate(dag.vs["run_order"]):
+        for i, order in enumerate(dag.vs["run_level"]):
             if order >= 0:
                 dag.vs[i]["label"] = str(order) + "\n" + dag.vs[i]["Name"]
             else:
@@ -432,7 +468,7 @@ class MappingDependencies:
         for node in dag.vs:
             node["shape"] = "database" if node["role"] == "entity" else "hexagon"
             node["shadow"] = True
-            node["label"] = str(node["run_order"]) if node["run_order"] >= 0 else ""
+            node["label"] = str(node["run_level"]) if node["run_level"] >= 0 else ""
             self._set_pyvis_node_tooltip(node)
         # Set edge attributes
         # FIXME: does nothing at the moment, lost in igraph to networkx conversion
@@ -457,25 +493,25 @@ class MappingDependencies:
                 """
         if node["role"] == "mapping":
             node["title"] = (
-                    node["title"]
-                    + f"""
-                    Run order: {str(node["run_order"])}
+                node["title"]
+                + f"""
+                    Run order: {str(node["run_level"])}
                     CreationDate: {node["CreationDate"]}
                     Creator: {node["Creator"]}
                     ModificationDate: {node["ModificationDate"]}
                     Modifier: {node["Modifier"]}
                 """
-                )
+            )
         else:
             node["title"] = (
-                    node["title"]
-                    + f"""
+                node["title"]
+                + f"""
                 Id Model: {node["IdModel"]}
                 Name Model: {node["NameModel"]}
                 Code Model: {node["CodeModel"]}
                 Is Target: {node["IsDocumentModel"]}
                 """
-                )
+            )
 
     def plot_dag_networkx(self, dag: nx.DiGraph, file_html_out: str) -> None:
         """Create a html file with a graphical representation of a networkx graph
