@@ -261,29 +261,33 @@ class MappingDependencies:
         Returns:
             ig.Graph: ETL stages for a level added in the mapping vertex attribute 'stage'
         """
+        dict_level_runs = {}
+        # All mapping nodes
         nodes_mapping = dag.vs.select(role_eq="mapping")
 
-        # Determine stages by run level
-        run_level_unique = list(set([node["run_level"] for node in nodes_mapping]))
-        run_level_unique = [0]
-        for run_level in run_level_unique:
+        # Determine run stages of mappings by run level
+        run_levels = list({node["run_level"] for node in nodes_mapping})
+        for run_level in run_levels:
             mappings = nodes_mapping.select(run_level_eq=run_level)
             mapping_sources = [
                 {"mapping": mapping["Id"], "sources": dag.predecessors(mapping)}
                 for mapping in mappings
             ]
-            # Create mapping conflict graph
-            graph_conflicts = ig.Graph()
-            for i, a in enumerate(mapping_sources):
-                for j, b in enumerate(mapping_sources):
-                    if i >= j:
-                        continue
-                    node_source = graph_conflicts.add_vertex(a["mapping"])
-                    node_target = graph_conflicts.add_vertex(b["mapping"])
-                    if set(a["sources"]) & set(b["sources"]):
-                        graph_conflicts.add_edge(source=node_source.index, target=node_target.index)
+            # Create graph of mapping conflicts (mappings that draw on the same sources)
+            lst_vertices = [{"name": mapping["mapping"]} for mapping in mapping_sources]
+            lst_edges = []
+            for a in mapping_sources:
+                for b in mapping_sources:
+                    if a["mapping"] < b["mapping"]:
+                        qty_common = len(set(a["sources"]) & set(b["sources"]))
+                        if qty_common > 0:
+                            lst_edges.append({"source": a["mapping"], "target": b["mapping"]})
+            graph_conflicts = ig.Graph.DictList(vertices=lst_vertices, edges=lst_edges, directed=False)
+            # Determine unique sorting for conflicts
+            order = graph_conflicts.vertex_coloring_greedy(method='colored_neighbors')
+            dict_level_runs |= dict(zip(graph_conflicts.vs["name"], order))
 
-        ig.plot(graph_conflicts, "output/mapping_conflict.png")
+        # TODO: add result back to DAG
         return dag
 
     def _dag_node_hierarchy_level(self, dag: ig.Graph) -> ig.Graph:
