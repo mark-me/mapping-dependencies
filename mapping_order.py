@@ -39,7 +39,7 @@ class MappingDependencies:
             "IsDocumentModel",
         ]
 
-    def add_RETW_files(self, files_RETW: list) -> bool:
+    def add_RETW_files(self, files_RETW: list, generate_plot: bool = False) -> bool:
         """Process multiple RETW files.
 
         Processes each RETW file in the input list, generates the mapping order,
@@ -63,7 +63,9 @@ class MappingDependencies:
                 return False
         return True
 
-    def add_RETW_file(self, file_RETW: str, iteration: int=0) -> bool:
+    def add_RETW_file(
+        self, file_RETW: str, iteration: int = 0, generate_plot: bool = False
+    ) -> bool:
         """Load a RETW json file
 
         Args:
@@ -88,16 +90,19 @@ class MappingDependencies:
 
         # Write mapping
         lst_mapping_order = self.get_mapping_order()
-        with open(f"output/mapping_order_{iteration}.jsonl", "w", encoding="utf-8") as file:
+        with open(
+            f"output/mapping_order_{iteration}.jsonl", "w", encoding="utf-8"
+        ) as file:
             for mapping in lst_mapping_order:
                 json.dump(mapping, file)
                 file.write("\n")
 
         # Write HTML overview
-        dag = self.get_dag_networkx()
-        self.plot_dag_networkx(
-            dag, file_html_out=f"output/dag_structure_{iteration}.html"
-        )
+        if generate_plot:
+            dag = self.get_dag_networkx()
+            self.plot_dag_networkx(
+                dag, file_html_out=f"output/dag_structure_{iteration}.html"
+            )
         return True
 
     def _add_mapping(self, dict_mapping: dict) -> bool:
@@ -224,11 +229,9 @@ class MappingDependencies:
         """
         dag = ig.Graph.DictList(edges=self.links, vertices=self.nodes, directed=True)
         if not dag.is_dag():
-            logger.error(
-                "Graph is cyclic, ETL mappings should always be acyclic! https://en.wikipedia.org/wiki/Directed_acyclic_graph"
-            )
+            logger.error("ETL Flow is cyclic, should always be acyclic!")
         dag = self._dag_node_position(dag=dag)
-        dag = self._dag_mapping_run_level(dag=dag)
+        dag = self._dag_mapping_run_order(dag=dag)
         dag = self._dag_node_hierarchy_level(dag=dag)
         dag = self._set_dag_visual_attributes(dag=dag)
         return dag
@@ -263,7 +266,7 @@ class MappingDependencies:
         dag.vs["position"] = lst_entity_position
         return dag
 
-    def _dag_mapping_run_level(self, dag: ig.Graph) -> ig.Graph:
+    def _dag_mapping_run_order(self, dag: ig.Graph) -> ig.Graph:
         """Erich the DAG with the sequence the mappings should run in
 
         Args:
@@ -289,10 +292,10 @@ class MappingDependencies:
             for run_level, role in zip(lst_mapping_order, dag.vs["role"])
         )
         dag.vs["run_level"] = lst_run_level
-        dag = self._dag_mapping_stages(dag=dag)
+        dag = self._dag_mapping_run_level_stages(dag=dag)
         return dag
 
-    def _dag_mapping_stages(self, dag: ig.Graph) -> ig.Graph:
+    def _dag_mapping_run_level_stages(self, dag: ig.Graph) -> ig.Graph:
         """Determine mapping stages for each run level
 
         Args:
@@ -619,8 +622,7 @@ def main():
     """
     lst_files_RETW = ["output/Usecase_Aangifte_Behandeling.json"]
     dep_parser = MappingDependencies()
-
-    dep_parser.add_RETW_files(files_RETW=lst_files_RETW)
+    dep_parser.add_RETW_files(files_RETW=lst_files_RETW, generate_plot=True)
 
 
 if __name__ == "__main__":
