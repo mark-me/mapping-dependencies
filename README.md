@@ -15,7 +15,7 @@ The ordering of mappings can be determined using ```mapping_order.py``` and chan
 The running order of mappings is determined by two components:
 
 * Run level: where in the DAG hierarchy, going from source entities to end entities, is the mapping positioned. The mappings taking in only source entities are set at run level 0, the next run levels are determined by the number of mappings in the hierarchy running before the mapping under consideration.
-* Concurrency order: If two mappings on the same run level share the same entities they should get different concurrency ordering to prevent deadlocking.
+* Run level stage: If mappings on the same run level share the same entities they should get different concurrency ordering to prevent deadlocking. A [greedy colouring algorithm](https://www.youtube.com/watch?v=vGjsi8NIpSE) is used to determine the run order of mappings within a run level.
 
 ### Output
 

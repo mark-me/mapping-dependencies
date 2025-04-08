@@ -249,11 +249,11 @@ class MappingDependencies:
             for run_level, role in zip(lst_mapping_order, dag.vs["role"])
         )
         dag.vs["run_level"] = lst_run_level
-        dag = self._mapping_stages(dag=dag)
+        dag = self._dag_mapping_stages(dag=dag)
         return dag
 
-    def _mapping_stages(self, dag: ig.Graph) -> ig.Graph:
-        """Determine mapping stages for each level
+    def _dag_mapping_stages(self, dag: ig.Graph) -> ig.Graph:
+        """Determine mapping stages for each run level
 
         Args:
             dag (ig.Graph): DAG describing the ETL
@@ -268,27 +268,44 @@ class MappingDependencies:
         # Determine run stages of mappings by run level
         run_levels = list({node["run_level"] for node in nodes_mapping})
         for run_level in run_levels:
-            mappings = nodes_mapping.select(run_level_eq=run_level)
+            # Find run_level mappings and corresponding source entities
             mapping_sources = [
                 {"mapping": mapping["Id"], "sources": dag.predecessors(mapping)}
-                for mapping in mappings
+                for mapping in nodes_mapping.select(run_level_eq=run_level)
             ]
             # Create graph of mapping conflicts (mappings that draw on the same sources)
-            lst_vertices = [{"name": mapping["mapping"]} for mapping in mapping_sources]
-            lst_edges = []
-            for a in mapping_sources:
-                for b in mapping_sources:
-                    if a["mapping"] < b["mapping"]:
-                        qty_common = len(set(a["sources"]) & set(b["sources"]))
-                        if qty_common > 0:
-                            lst_edges.append({"source": a["mapping"], "target": b["mapping"]})
-            graph_conflicts = ig.Graph.DictList(vertices=lst_vertices, edges=lst_edges, directed=False)
+            graph_conflicts = self._create_run_level_conflicts_graph(mapping_sources)
             # Determine unique sorting for conflicts
-            order = graph_conflicts.vertex_coloring_greedy(method='colored_neighbors')
+            order = graph_conflicts.vertex_coloring_greedy(method="colored_neighbors")
+            # Apply them back to the DAG
             dict_level_runs |= dict(zip(graph_conflicts.vs["name"], order))
-
-        # TODO: add result back to DAG
+            for k, v in dict_level_runs.items():
+                dag.vs.select(Id_eq=k)["run_level_stage"] = v
         return dag
+
+    def _create_run_level_conflicts_graph(self, mapping_sources: dict) -> ig.Graph:
+        """Generate a graph expressing which mappings share sources
+
+        Args:
+            mapping_sources (dict): Mappings with a list of source node ids for each of them
+
+        Returns:
+            ig.Graph: Expressing mapping sharing source entities
+        """
+        lst_vertices = [{"name": mapping["mapping"]} for mapping in mapping_sources]
+        lst_edges = []
+        for a in mapping_sources:
+            for b in mapping_sources:
+                if a["mapping"] < b["mapping"]:
+                    qty_common = len(set(a["sources"]) & set(b["sources"]))
+                    if qty_common > 0:
+                        lst_edges.append(
+                            {"source": a["mapping"], "target": b["mapping"]}
+                        )
+        graph_conflicts = ig.Graph.DictList(
+            vertices=lst_vertices, edges=lst_edges, directed=False
+        )
+        return graph_conflicts
 
     def _dag_node_hierarchy_level(self, dag: ig.Graph) -> ig.Graph:
         """Enrich the DAG with the level in the hierarchy where vertices should be plotted.
@@ -377,11 +394,12 @@ class MappingDependencies:
         Returns:
             ig.Graph: The DAG with node labels set.
         """
-        for i, order in enumerate(dag.vs["run_level"]):
-            if order >= 0:
-                dag.vs[i]["label"] = str(order) + "\n" + dag.vs[i]["Name"]
+        for i, run_level in enumerate(dag.vs["run_level"]):
+            if run_level >= 0:
+                label_parts = [dag.vs[i]["Id"], str(run_level), str(dag.vs[i]["run_level_stage"])]
+                dag.vs[i]["label"] = " - ".join(label_parts)
             else:
-                dag.vs[i]["label"] = dag.vs[i]["Name"]
+                dag.vs[i]["label"] = dag.vs[i]["Id"]
         return dag
 
     def _set_nodes_shape(self, dag: ig.Graph) -> ig.Graph:
@@ -472,8 +490,7 @@ class MappingDependencies:
         for node in dag.vs:
             node["shape"] = "database" if node["role"] == "entity" else "hexagon"
             node["shadow"] = True
-            node["label"] = str(node["run_level"]) if node["run_level"] >= 0 else ""
-            self._set_pyvis_node_tooltip(node)
+            self._set_node_tooltip(node)
         # Set edge attributes
         # FIXME: does nothing at the moment, lost in igraph to networkx conversion
         for edge in dag.es:
@@ -481,7 +498,7 @@ class MappingDependencies:
             edge["shadow"] = True
         return dag
 
-    def _set_pyvis_node_tooltip(self, node: ig.Vertex):
+    def _set_node_tooltip(self, node: ig.Vertex):
         """Set the tooltip for a node in the pyvis visualization.
 
         Sets the 'title' attribute of the node, which is used as a tooltip in pyvis,
