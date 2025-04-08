@@ -237,14 +237,13 @@ class MappingDependencies:
             ig.Graph: DAG where the vertices are enriched with the attribute 'run_level',
             entity vertices get the value -1
         """
-        lst_mapping_order = []
-        for i in range(dag.vcount()):
-            lst_vertices = dag.subcomponent(dag.vs[i], mode="in")
-            predecessors = [dag.vs[vtx] for vtx in lst_vertices]
-            predecessors_mapping = [
-                vtx for vtx in predecessors if vtx["role"] == "mapping"
-            ]
-            lst_mapping_order.append(len(predecessors_mapping) - 1)
+        lst_mapping_order = [
+            sum(
+                dag.vs[vtx]["role"] == "mapping"
+                for vtx in dag.subcomponent(dag.vs[i], mode="in")
+            ) - 1
+            for i in range(dag.vcount())
+        ]
         # Assign valid run order to mappings only
         lst_run_level = []
         lst_run_level.extend(
