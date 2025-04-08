@@ -237,6 +237,7 @@ class MappingDependencies:
             ig.Graph: DAG where the vertices are enriched with the attribute 'run_level',
             entity vertices get the value -1
         """
+        # For each node calculate the number of mapping nodes before the current node
         lst_mapping_order = [
             sum(
                 dag.vs[vtx]["role"] == "mapping"
