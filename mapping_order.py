@@ -493,6 +493,11 @@ class MappingDependencies:
         return self._igraph_to_networkx(dag=dag)
 
     def _set_node_attributes_pyvis(self, dag: ig.Graph) -> ig.Graph:
+        """Set node and edge attributes for pyvis visualization.
+
+        Sets visual attributes (shape, shadow, tooltip) for nodes and edges in the DAG
+        to be used in the pyvis visualization.
+        """
         # Set visual node properties
         for node in dag.vs:
             node["shape"] = "database" if node["role"] == "entity" else "hexagon"
