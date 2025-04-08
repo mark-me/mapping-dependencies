@@ -39,6 +39,41 @@ class MappingDependencies:
             "IsDocumentModel",
         ]
 
+    def add_RETW_files(self, files_RETW: list) -> bool:
+        """Process multiple RETW files.
+
+        Processes each RETW file in the input list, generates the mapping order,
+        and creates a DAG visualization.
+        Args:
+            files_RETW (list): list of RETW file containing mappings
+
+        Returns:
+            bool: Indicates whether all RETW file were processed
+        """
+        for i, file_RETW in enumerate(files_RETW):
+            # Add file to parser
+            if self.add_RETW_file(file_RETW=file_RETW):
+                logger.info(f"Added RETW file '{file_RETW}'")
+                # Write mapping
+                lst_mapping_order = self.get_mapping_order()
+                with open(
+                    f"output/mapping_order_{str(i)}.jsonl", "w", encoding="utf-8"
+                ) as file:
+                    for mapping in lst_mapping_order:
+                        json.dump(mapping, file)
+                        file.write("\n")
+
+                # Write HTML overview
+                dag = self.get_dag_networkx()
+                self.plot_dag_networkx(
+                    dag, file_html_out=f"output/dag_structure_{str(i)}.html"
+                )
+            else:
+                logger.error(f"Failed to add RETW file '{file_RETW}'")
+                return False
+        return True
+
+
     def add_RETW_file(self, file_RETW: str) -> bool:
         """Load a RETW json file
 
@@ -583,27 +618,7 @@ def main():
     lst_files_RETW = ["output/Usecase_Aangifte_Behandeling.json"]
     dep_parser = MappingDependencies()
 
-    for i, file_RETW in enumerate(lst_files_RETW):
-        # Add file to parser
-        if dep_parser.add_RETW_file(file_RETW=file_RETW):
-            logger.info(f"Added RETW file '{file_RETW}'")
-            # Write mapping
-            lst_mapping_order = dep_parser.get_mapping_order()
-            with open(
-                f"output/mapping_order_{str(i)}.jsonl", "w", encoding="utf-8"
-            ) as file:
-                for mapping in lst_mapping_order:
-                    json.dump(mapping, file)
-                    file.write("\n")
-
-            # Write HTML overview
-            dag = dep_parser.get_dag_networkx()
-            dep_parser.plot_dag_networkx(
-                dag, file_html_out=f"output/dag_structure_{str(i)}.html"
-            )
-        else:
-            logger.error(f"Failed to add RETW file '{file_RETW}'")
-            return
+    dep_parser.add_RETW_files(files_RETW=lst_files_RETW)
 
 
 if __name__ == "__main__":
