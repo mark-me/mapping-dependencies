@@ -17,7 +17,7 @@ class MappingDependencies:
 
         Initializes the nodes, links, and key lists for mappings and entities.
         """
-        self.files_RETW = {}
+        self.files_RETW = []
         self.nodes = []
         self.links = []
         self.keys_mapping = [
@@ -51,34 +51,19 @@ class MappingDependencies:
             bool: Indicates whether all RETW file were processed
         """
         # Make sure added files are unique
-        files_RETW = list(set(files_RETW))
-        self.files_RETW = [{"file": file, "processed": False} for file in files_RETW]
+        self.files_RETW = list(set(files_RETW))
 
         # Process files
-        for i, file_RETW in enumerate(files_RETW):
+        for i, file_RETW in enumerate(self.files_RETW):
             # Add file to parser
-            if self.add_RETW_file(file_RETW=file_RETW):
+            if self.add_RETW_file(file_RETW=file_RETW, iteration=i):
                 logger.info(f"Added RETW file '{file_RETW}'")
-                # Write mapping
-                lst_mapping_order = self.get_mapping_order()
-                with open(
-                    f"output/mapping_order_{str(i)}.jsonl", "w", encoding="utf-8"
-                ) as file:
-                    for mapping in lst_mapping_order:
-                        json.dump(mapping, file)
-                        file.write("\n")
-
-                # Write HTML overview
-                dag = self.get_dag_networkx()
-                self.plot_dag_networkx(
-                    dag, file_html_out=f"output/dag_structure_{str(i)}.html"
-                )
             else:
                 logger.error(f"Failed to add RETW file '{file_RETW}'")
                 return False
         return True
 
-    def add_RETW_file(self, file_RETW: str) -> bool:
+    def add_RETW_file(self, file_RETW: str, iteration: int=0) -> bool:
         """Load a RETW json file
 
         Args:
@@ -101,6 +86,18 @@ class MappingDependencies:
         else:
             logger.warning(f"Couldn't find mappings in RETW file '{file_RETW}'")
 
+        # Write mapping
+        lst_mapping_order = self.get_mapping_order()
+        with open(f"output/mapping_order_{iteration}.jsonl", "w", encoding="utf-8") as file:
+            for mapping in lst_mapping_order:
+                json.dump(mapping, file)
+                file.write("\n")
+
+        # Write HTML overview
+        dag = self.get_dag_networkx()
+        self.plot_dag_networkx(
+            dag, file_html_out=f"output/dag_structure_{iteration}.html"
+        )
         return True
 
     def _add_mapping(self, dict_mapping: dict) -> bool:
