@@ -1,4 +1,3 @@
-from collections import defaultdict
 import json
 
 import igraph as ig
@@ -18,6 +17,7 @@ class MappingDependencies:
 
         Initializes the nodes, links, and key lists for mappings and entities.
         """
+        self.files_RETW = {}
         self.nodes = []
         self.links = []
         self.keys_mapping = [
@@ -50,6 +50,11 @@ class MappingDependencies:
         Returns:
             bool: Indicates whether all RETW file were processed
         """
+        # Make sure added files are unique
+        files_RETW = list(set(files_RETW))
+        self.files_RETW = [{"file": file, "processed": False} for file in files_RETW]
+
+        # Process files
         for i, file_RETW in enumerate(files_RETW):
             # Add file to parser
             if self.add_RETW_file(file_RETW=file_RETW):
@@ -72,7 +77,6 @@ class MappingDependencies:
                 logger.error(f"Failed to add RETW file '{file_RETW}'")
                 return False
         return True
-
 
     def add_RETW_file(self, file_RETW: str) -> bool:
         """Load a RETW json file
@@ -277,7 +281,8 @@ class MappingDependencies:
             sum(
                 dag.vs[vtx]["role"] == "mapping"
                 for vtx in dag.subcomponent(dag.vs[i], mode="in")
-            ) - 1
+            )
+            - 1
             for i in range(dag.vcount())
         ]
         # Assign valid run order to mappings only
