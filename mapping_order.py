@@ -482,15 +482,15 @@ class MappingDependencies:
 
     def get_dag_networkx(self) -> nx.DiGraph:
         dag = self.get_dag()
-        dag = self._set_pyvis_attributes(dag=dag)
+        dag = self._set_node_attributes_pyvis(dag=dag)
         return self._igraph_to_networkx(dag=dag)
 
-    def _set_pyvis_attributes(self, dag: ig.Graph) -> ig.Graph:
+    def _set_node_attributes_pyvis(self, dag: ig.Graph) -> ig.Graph:
         # Set visual node properties
         for node in dag.vs:
             node["shape"] = "database" if node["role"] == "entity" else "hexagon"
             node["shadow"] = True
-            self._set_node_tooltip(node)
+            self._set_node_tooltip_pyvis(node)
         # Set edge attributes
         # FIXME: does nothing at the moment, lost in igraph to networkx conversion
         for edge in dag.es:
@@ -498,7 +498,7 @@ class MappingDependencies:
             edge["shadow"] = True
         return dag
 
-    def _set_node_tooltip(self, node: ig.Vertex):
+    def _set_node_tooltip_pyvis(self, node: ig.Vertex):
         """Set the tooltip for a node in the pyvis visualization.
 
         Sets the 'title' attribute of the node, which is used as a tooltip in pyvis,

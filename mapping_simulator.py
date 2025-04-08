@@ -35,7 +35,7 @@ class MappingSimulator(MappingDependencies):
             )
         self.nodes_affected = list(set(nodes_affected))
         # Set visual attributes accordingly
-        self._set_pyvis_attributes(dag=self.dag)
+        self._set_node_attributes_pyvis(dag=self.dag)
         for id_node in self.nodes_affected:
             node = self.dag.vs[id_node]
             if id_node in self.nodes_failed:
