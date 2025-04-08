@@ -1,3 +1,4 @@
+from collections import defaultdict
 import json
 
 import igraph as ig
@@ -169,11 +170,14 @@ class MappingDependencies:
         for node in dag.vs:
             if node["role"] == "mapping":
                 dict_mapping = {key: node[key] for key in self.keys_mapping}
-                dict_mapping["RunOrder"] = node["run_order"]
+                dict_mapping["RunLevel"] = node["run_level"]
+                dict_mapping["RunLevelStage"] = node["run_level_stage"]
                 lst_mappings.append(dict_mapping)
-        # Sort the list of mappings by run order and the id
-        sorting = sorted([(i["RunOrder"], i["Id"], i) for i in lst_mappings])
-        lst_mappings = [i[2] for i in sorting]
+        # Sort the list of mappings by run level and the run level stage
+        lst_mappings = sorted(
+            lst_mappings,
+            key=lambda mapping: (mapping["RunLevel"], mapping["RunLevelStage"]),
+        )
         return lst_mappings
 
     def get_dag(self) -> ig.Graph:
@@ -188,7 +192,7 @@ class MappingDependencies:
                 "Graph is cyclic, ETL mappings should always be acyclic! https://en.wikipedia.org/wiki/Directed_acyclic_graph"
             )
         dag = self._dag_node_position(dag=dag)
-        dag = self._dag_mapping_run_order(dag=dag)
+        dag = self._dag_mapping_run_level(dag=dag)
         dag = self._dag_node_hierarchy_level(dag=dag)
         dag = self._set_dag_visual_attributes(dag=dag)
         return dag
@@ -223,14 +227,14 @@ class MappingDependencies:
         dag.vs["position"] = lst_entity_position
         return dag
 
-    def _dag_mapping_run_order(self, dag: ig.Graph) -> ig.Graph:
+    def _dag_mapping_run_level(self, dag: ig.Graph) -> ig.Graph:
         """Erich the DAG with the sequence the mappings should run in
 
         Args:
             dag (ig.Graph): DAG that describes entities and mappings
 
         Returns:
-            ig.Graph: DAG where the vertices are enriched with the attribute 'run_order',
+            ig.Graph: DAG where the vertices are enriched with the attribute 'run_level',
             entity vertices get the value -1
         """
         lst_mapping_order = []
@@ -242,13 +246,69 @@ class MappingDependencies:
             ]
             lst_mapping_order.append(len(predecessors_mapping) - 1)
         # Assign valid run order to mappings only
-        lst_run_order = []
-        lst_run_order.extend(
-            run_order if role == "mapping" else -1
-            for run_order, role in zip(lst_mapping_order, dag.vs["role"])
+        lst_run_level = []
+        lst_run_level.extend(
+            run_level if role == "mapping" else -1
+            for run_level, role in zip(lst_mapping_order, dag.vs["role"])
         )
-        dag.vs["run_order"] = lst_run_order
+        dag.vs["run_level"] = lst_run_level
+        dag = self._dag_mapping_stages(dag=dag)
         return dag
+
+    def _dag_mapping_stages(self, dag: ig.Graph) -> ig.Graph:
+        """Determine mapping stages for each run level
+
+        Args:
+            dag (ig.Graph): DAG describing the ETL
+
+        Returns:
+            ig.Graph: ETL stages for a level added in the mapping vertex attribute 'stage'
+        """
+        dict_level_runs = {}
+        # All mapping nodes
+        nodes_mapping = dag.vs.select(role_eq="mapping")
+
+        # Determine run stages of mappings by run level
+        run_levels = list({node["run_level"] for node in nodes_mapping})
+        for run_level in run_levels:
+            # Find run_level mappings and corresponding source entities
+            mapping_sources = [
+                {"mapping": mapping["Id"], "sources": dag.predecessors(mapping)}
+                for mapping in nodes_mapping.select(run_level_eq=run_level)
+            ]
+            # Create graph of mapping conflicts (mappings that draw on the same sources)
+            graph_conflicts = self._create_run_level_conflicts_graph(mapping_sources)
+            # Determine unique sorting for conflicts
+            order = graph_conflicts.vertex_coloring_greedy(method="colored_neighbors")
+            # Apply them back to the DAG
+            dict_level_runs |= dict(zip(graph_conflicts.vs["name"], order))
+            for k, v in dict_level_runs.items():
+                dag.vs.select(Id_eq=k)["run_level_stage"] = v
+        return dag
+
+    def _create_run_level_conflicts_graph(self, mapping_sources: dict) -> ig.Graph:
+        """Generate a graph expressing which mappings share sources
+
+        Args:
+            mapping_sources (dict): Mappings with a list of source node ids for each of them
+
+        Returns:
+            ig.Graph: Expressing mapping sharing source entities
+        """
+        lst_vertices = [{"name": mapping["mapping"]} for mapping in mapping_sources]
+        lst_edges = []
+        for a in mapping_sources:
+            for b in mapping_sources:
+                if a["mapping"] < b["mapping"]:
+                    qty_common = len(set(a["sources"]) & set(b["sources"]))
+                    if qty_common > 0:
+                        lst_edges.append(
+                            {"source": a["mapping"], "target": b["mapping"]}
+                        )
+        graph_conflicts = ig.Graph.DictList(
+            vertices=lst_vertices, edges=lst_edges, directed=False
+        )
+        return graph_conflicts
 
     def _dag_node_hierarchy_level(self, dag: ig.Graph) -> ig.Graph:
         """Enrich the DAG with the level in the hierarchy where vertices should be plotted.
@@ -337,11 +397,16 @@ class MappingDependencies:
         Returns:
             ig.Graph: The DAG with node labels set.
         """
-        for i, order in enumerate(dag.vs["run_order"]):
-            if order >= 0:
-                dag.vs[i]["label"] = str(order) + "\n" + dag.vs[i]["Name"]
+        for i, run_level in enumerate(dag.vs["run_level"]):
+            if run_level >= 0:
+                label_parts = [
+                    dag.vs[i]["Id"],
+                    str(run_level),
+                    str(dag.vs[i]["run_level_stage"]),
+                ]
+                dag.vs[i]["label"] = " - ".join(label_parts)
             else:
-                dag.vs[i]["label"] = dag.vs[i]["Name"]
+                dag.vs[i]["label"] = dag.vs[i]["Id"]
         return dag
 
     def _set_nodes_shape(self, dag: ig.Graph) -> ig.Graph:
@@ -424,16 +489,15 @@ class MappingDependencies:
 
     def get_dag_networkx(self) -> nx.DiGraph:
         dag = self.get_dag()
-        dag = self._set_pyvis_attributes(dag=dag)
+        dag = self._set_node_attributes_pyvis(dag=dag)
         return self._igraph_to_networkx(dag=dag)
 
-    def _set_pyvis_attributes(self, dag: ig.Graph) -> ig.Graph:
+    def _set_node_attributes_pyvis(self, dag: ig.Graph) -> ig.Graph:
         # Set visual node properties
         for node in dag.vs:
             node["shape"] = "database" if node["role"] == "entity" else "hexagon"
             node["shadow"] = True
-            node["label"] = str(node["run_order"]) if node["run_order"] >= 0 else ""
-            self._set_pyvis_node_tooltip(node)
+            self._set_node_tooltip_pyvis(node)
         # Set edge attributes
         # FIXME: does nothing at the moment, lost in igraph to networkx conversion
         for edge in dag.es:
@@ -441,7 +505,7 @@ class MappingDependencies:
             edge["shadow"] = True
         return dag
 
-    def _set_pyvis_node_tooltip(self, node: ig.Vertex):
+    def _set_node_tooltip_pyvis(self, node: ig.Vertex):
         """Set the tooltip for a node in the pyvis visualization.
 
         Sets the 'title' attribute of the node, which is used as a tooltip in pyvis,
@@ -457,25 +521,26 @@ class MappingDependencies:
                 """
         if node["role"] == "mapping":
             node["title"] = (
-                    node["title"]
-                    + f"""
-                    Run order: {str(node["run_order"])}
+                node["title"]
+                + f"""
+                    Run level: {str(node["run_level"])}
+                    Run level stage: {str(node["run_level_stage"])}
                     CreationDate: {node["CreationDate"]}
                     Creator: {node["Creator"]}
                     ModificationDate: {node["ModificationDate"]}
                     Modifier: {node["Modifier"]}
                 """
-                )
+            )
         else:
             node["title"] = (
-                    node["title"]
-                    + f"""
+                node["title"]
+                + f"""
                 Id Model: {node["IdModel"]}
                 Name Model: {node["NameModel"]}
                 Code Model: {node["CodeModel"]}
                 Is Target: {node["IsDocumentModel"]}
                 """
-                )
+            )
 
     def plot_dag_networkx(self, dag: nx.DiGraph, file_html_out: str) -> None:
         """Create a html file with a graphical representation of a networkx graph
@@ -484,7 +549,7 @@ class MappingDependencies:
             dag (nx.DiGraph): Networkx DAG
             file_html_out (str): file path that the result should be written to
         """
-        net = Network("945px", "1917px", directed=True, layout=True)
+        net = Network("900px", "1917px", directed=True, layout=True)
         net.from_nx(dag)
         net.options.layout.hierarchical.sortMethod = "directed"
         net.options.physics.solver = "hierarchicalRepulsion"
