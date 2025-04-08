@@ -170,11 +170,14 @@ class MappingDependencies:
         for node in dag.vs:
             if node["role"] == "mapping":
                 dict_mapping = {key: node[key] for key in self.keys_mapping}
-                dict_mapping["RunOrder"] = node["run_level"]
+                dict_mapping["RunLevel"] = node["run_level"]
+                dict_mapping["RunLevelStage"] = node["run_level_stage"]
                 lst_mappings.append(dict_mapping)
-        # Sort the list of mappings by run order and the id
-        sorting = sorted([(i["RunOrder"], i["Id"], i) for i in lst_mappings])
-        lst_mappings = [i[2] for i in sorting]
+        # Sort the list of mappings by run level and the run level stage
+        lst_mappings = sorted(
+            lst_mappings,
+            key=lambda mapping: (mapping["RunLevel"], mapping["RunLevelStage"]),
+        )
         return lst_mappings
 
     def get_dag(self) -> ig.Graph:
@@ -396,7 +399,11 @@ class MappingDependencies:
         """
         for i, run_level in enumerate(dag.vs["run_level"]):
             if run_level >= 0:
-                label_parts = [dag.vs[i]["Id"], str(run_level), str(dag.vs[i]["run_level_stage"])]
+                label_parts = [
+                    dag.vs[i]["Id"],
+                    str(run_level),
+                    str(dag.vs[i]["run_level_stage"]),
+                ]
                 dag.vs[i]["label"] = " - ".join(label_parts)
             else:
                 dag.vs[i]["label"] = dag.vs[i]["Id"]
@@ -516,7 +523,8 @@ class MappingDependencies:
             node["title"] = (
                 node["title"]
                 + f"""
-                    Run order: {str(node["run_level"])}
+                    Run level: {str(node["run_level"])}
+                    Run level stage: {str(node["run_level_stage"])}
                     CreationDate: {node["CreationDate"]}
                     Creator: {node["Creator"]}
                     ModificationDate: {node["ModificationDate"]}
