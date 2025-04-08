@@ -488,6 +488,14 @@ class MappingDependencies:
         return dag_nx
 
     def get_dag_networkx(self) -> nx.DiGraph:
+        """Get the DAG as a NetworkX graph.
+
+        Retrieves the DAG, sets node attributes for pyvis visualization,
+        and converts it to a NetworkX graph.
+
+        Returns:
+            nx.DiGraph: The DAG as a NetworkX graph.
+        """
         dag = self.get_dag()
         dag = self._set_node_attributes_pyvis(dag=dag)
         return self._igraph_to_networkx(dag=dag)
