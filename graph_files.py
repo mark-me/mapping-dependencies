@@ -286,18 +286,49 @@ class GraphRETWFiles(GraphRETWBase):
             ig.plot(graph, file_png)
         return graph
 
-    def _build_graph_mappings(self) -> ig.Graph:
+    def _build_dag_mappings(self) -> ig.Graph:
         vertices = (
             list(self.mappings.values())
             + list(self.entities.values())
         )
         edge_types = [EdgeType.ENTITY_SOURCE.name, EdgeType.ENTITY_TARGET.name]
         edges = [v for v in self.edges if v["type"] in edge_types]
-        graph = ig.Graph.DictList(vertices=vertices, edges=edges, directed=True)
+        dag = ig.Graph.DictList(vertices=vertices, edges=edges, directed=True)
+        dag = self._dag_node_position(dag=dag)
         logger.info("Build graph total")
-        return graph
+        return dag
 
-    def plot_graph_mappings(self, file_png: str=None) -> ig.Graph:
+    def _dag_node_position(self, dag: ig.Graph) -> ig.Graph:
+        """Determine and set the position of each node in the DAG.
+
+        Determines if entities are start, intermediate, or end nodes based on their in-degree and out-degree,
+        and adds a 'position' attribute to the DAG vertices.
+
+        Args:
+            dag (ig.Graph): The DAG to process.
+
+        Returns:
+            ig.Graph: The DAG with node positions set.
+        """
+        dag.vs["qty_out"] = dag.degree(dag.vs, mode="out")
+        dag.vs["qty_in"] = dag.degree(dag.vs, mode="in")
+        lst_entity_position = []
+        for qty_in, qty_out in zip(
+            dag.vs["qty_in"], dag.vs["qty_out"]
+        ):
+            if qty_in == 0 and qty_out > 0:
+                position = "start"
+            elif qty_in > 0 and qty_out > 0:
+                position = "intermediate"
+            elif qty_in > 0 and qty_out == 0:
+                position = "end"
+            else:
+                position = "undetermined"
+            lst_entity_position.append(position)
+        dag.vs["position"] = lst_entity_position
+        return dag
+
+    def plot_dag_mappings(self, file_png: str=None) -> ig.Graph:
         """Plot the total graph and save it to a PNG file.
 
         Creates the entire graph, including files, mappings, and entities, with appropriate colors and shapes for each node type.
@@ -309,7 +340,7 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             ig.Graph: The graph that was plotted.
         """
-        graph = self._build_graph_mappings()
+        graph = self._build_dag_mappings()
         # Colouring
         for i in range(graph.vcount()):
             graph.vs[i]["color"] = self.node_type_color[graph.vs[i]["type"]]
@@ -329,7 +360,7 @@ def main():
     graph_RETWs = GraphRETWFiles()
     graph_RETWs.add_RETW_files(files_RETW=lst_files_RETW)
     graph = graph_RETWs.plot_graph_total(file_png="output/test_total.png")
-    graph = graph_RETWs.plot_graph_mappings(file_png="output/test_mappings.png")
+    graph = graph_RETWs.plot_dag_mappings(file_png="output/test_mappings.png")
 
     pass
 
