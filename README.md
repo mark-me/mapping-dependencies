@@ -30,6 +30,7 @@ This translated to the following three types nodes with attributes
 * RETW file nodes
   * File name
   * Created time stamp
+  * Order added
 * Entity nodes
   * Model
   * Name
