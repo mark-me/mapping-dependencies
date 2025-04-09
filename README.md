@@ -19,10 +19,35 @@ In a Power Designer document (and the corresponding RETW file), all objects are 
 
 ```mermaid
 erDiagram
-Mapping |o--|| Entity: "Target"
-Mapping }o--|{ Entity: "Source"
-Document ||--o{ Mapping: "Contains"
+Entity ||--|{ Entity-role: "Has a"
+Mapping ||--|{ Entity-role: "Uses"
+Document ||--o{ Mapping: "Created"
+Document ||--o{ Entity: "Created"
 ```
+
+This translated to the following three types nodes with attributes
+
+* RETW file nodes
+  * File name
+  * Created time stamp
+* Entity nodes
+  * Model
+  * Name
+  * Optional
+    * RETW file
+    * Created by
+    * Created time stamp
+    * Modified by
+    * Modified time stamp
+* Mapping nodes
+  * RETW file
+  * Power Designer Id
+  * Name
+  * Code
+  * Created by
+  * Created time stamp
+  * Modified by
+  * Modified time stamp
 
 
 ## Mapping order
