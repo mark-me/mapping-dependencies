@@ -74,7 +74,7 @@ class GraphRETWFiles(GraphRETWBase):
             {
                 id_file: {
                     "name": id_file,
-                    "type": VertexType.FILE.name,
+                    "type": VertexType.FILE,
                     "Order": order_added,
                     "FileRETW": file_RETW,
                     "TimeCreated": Path(file_RETW).stat().st_ctime,
@@ -112,7 +112,7 @@ class GraphRETWFiles(GraphRETWBase):
             dict_entity = {
                 id_entity: {
                     "name": id_entity,
-                    "type": VertexType.ENTITY.name,
+                    "type": VertexType.ENTITY,
                     "Id": entity["Id"],
                     "Name": entity["Name"],
                     "Code": entity["Code"],
@@ -125,7 +125,7 @@ class GraphRETWFiles(GraphRETWBase):
             edge_entity_file = {
                 "source": id_file,
                 "target": id_entity,
-                "type": EdgeType.FILE_ENTITY.name,
+                "type": EdgeType.FILE_ENTITY,
                 "CreationDate": entity["CreationDate"],
                 "Creator": entity["Creator"],
                 "ModificationDate": entity["ModificationDate"],
@@ -152,7 +152,7 @@ class GraphRETWFiles(GraphRETWBase):
             mapping = {
                 id_mapping: {
                     "name": id_mapping,
-                    "type": VertexType.MAPPING.name,
+                    "type": VertexType.MAPPING,
                     "Id": mapping_RETW["Id"],
                     "Name": mapping_RETW["Name"],
                     "Code": mapping_RETW["Code"],
@@ -166,7 +166,7 @@ class GraphRETWFiles(GraphRETWBase):
             edge_mapping_file = {
                 "source": id_file,
                 "target": id_mapping,
-                "type": EdgeType.FILE_MAPPING.name,
+                "type": EdgeType.FILE_MAPPING,
                 "CreationDate": mapping_RETW["CreationDate"],
                 "Creator": mapping_RETW["Creator"],
                 "ModificationDate": mapping_RETW["ModificationDate"],
@@ -195,7 +195,7 @@ class GraphRETWFiles(GraphRETWBase):
             entity = {
                 id_entity: {
                     "name": id_entity,
-                    "type": VertexType.ENTITY.name,
+                    "type": VertexType.ENTITY,
                     "Id": source_entity["Id"],
                     "Name": source_entity["Name"],
                     "Code": source_entity["Code"],
@@ -207,7 +207,7 @@ class GraphRETWFiles(GraphRETWBase):
             edge_entity_mapping = {
                 "source": id_entity,
                 "target": id_mapping,
-                "type": EdgeType.ENTITY_SOURCE.name,
+                "type": EdgeType.ENTITY_SOURCE,
             }
             self.edges.append(edge_entity_mapping)
 
@@ -229,7 +229,7 @@ class GraphRETWFiles(GraphRETWBase):
         entity = {
             id_entity: {
                 "name": id_entity,
-                "type": VertexType.ENTITY.name,
+                "type": VertexType.ENTITY,
                 "Id": target_entity["Id"],
                 "Name": target_entity["Name"],
                 "Code": target_entity["Code"],
@@ -241,7 +241,7 @@ class GraphRETWFiles(GraphRETWBase):
         edge_entity_mapping = {
             "source": id_mapping,
             "target": id_entity,
-            "type": EdgeType.ENTITY_TARGET.name,
+            "type": EdgeType.ENTITY_TARGET,
         }
         self.edges.append(edge_entity_mapping)
 
@@ -286,69 +286,6 @@ class GraphRETWFiles(GraphRETWBase):
             ig.plot(graph, file_png)
         return graph
 
-    def _build_dag_mappings(self) -> ig.Graph:
-        vertices = (
-            list(self.mappings.values())
-            + list(self.entities.values())
-        )
-        edge_types = [EdgeType.ENTITY_SOURCE.name, EdgeType.ENTITY_TARGET.name]
-        edges = [v for v in self.edges if v["type"] in edge_types]
-        dag = ig.Graph.DictList(vertices=vertices, edges=edges, directed=True)
-        dag = self._dag_node_position(dag=dag)
-        logger.info("Build graph total")
-        return dag
-
-    def _dag_node_position(self, dag: ig.Graph) -> ig.Graph:
-        """Determine and set the position of each node in the DAG.
-
-        Determines if entities are start, intermediate, or end nodes based on their in-degree and out-degree,
-        and adds a 'position' attribute to the DAG vertices.
-
-        Args:
-            dag (ig.Graph): The DAG to process.
-
-        Returns:
-            ig.Graph: The DAG with node positions set.
-        """
-        dag.vs["qty_out"] = dag.degree(dag.vs, mode="out")
-        dag.vs["qty_in"] = dag.degree(dag.vs, mode="in")
-        lst_entity_position = []
-        for qty_in, qty_out in zip(
-            dag.vs["qty_in"], dag.vs["qty_out"]
-        ):
-            if qty_in == 0 and qty_out > 0:
-                position = "start"
-            elif qty_in > 0 and qty_out > 0:
-                position = "intermediate"
-            elif qty_in > 0 and qty_out == 0:
-                position = "end"
-            else:
-                position = "undetermined"
-            lst_entity_position.append(position)
-        dag.vs["position"] = lst_entity_position
-        return dag
-
-    def plot_dag_mappings(self, file_png: str=None) -> ig.Graph:
-        """Plot the total graph and save it to a PNG file.
-
-        Creates the entire graph, including files, mappings, and entities, with appropriate colors and shapes for each node type.
-        The visualization can be saved to a specified PNG file.
-
-        Args:
-            file_png (str, optional): The path to the PNG file where the plot will be saved. Defaults to None.
-
-        Returns:
-            ig.Graph: The graph that was plotted.
-        """
-        graph = self._build_dag_mappings()
-        # Colouring
-        for i in range(graph.vcount()):
-            graph.vs[i]["color"] = self.node_type_color[graph.vs[i]["type"]]
-            graph.vs[i]["shape"] = self.igraph_type_shape[graph.vs[i]["type"]]
-        logger.info(f"Wrote total graph to '{file_png}'")
-        if file_png is not None:
-            ig.plot(graph, file_png)
-        return graph
 
 def main():
     """Main function to process RETW files and generate mapping order and DAG visualizations.
@@ -357,13 +294,12 @@ def main():
     and generates the mapping order and DAG visualization for each iteration of adding a file.
     """
     lst_files_RETW = ["output/Usecase_Aangifte_Behandeling.json"]
-    graph_RETWs = GraphRETWFiles()
-    graph_RETWs.add_RETW_files(files_RETW=lst_files_RETW)
-    graph = graph_RETWs.plot_graph_total(file_png="output/test_total.png")
-    graph = graph_RETWs.plot_dag_mappings(file_png="output/test_mappings.png")
-
-    pass
+    file_plot_total = "output/graph_files_total.png"
+    graph = GraphRETWFiles()
+    graph.add_RETW_files(files_RETW=lst_files_RETW)
+    graph.plot_graph_total(file_png=file_plot_total)
 
 
 if __name__ == "__main__":
     main()
+

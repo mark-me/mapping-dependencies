@@ -1,8 +1,7 @@
-from enum import Enum
+from enum import Enum, auto
 
 import igraph as ig
 import networkx as nx
-from pyvis.network import Network
 
 from log_config import logging
 
@@ -15,10 +14,10 @@ class EdgeType(Enum):
     Provides distinct identifiers for each type of edge in the graph, representing relationships between files, mappings, and entities.
     """
 
-    FILE_ENTITY = 1
-    FILE_MAPPING = 2
-    ENTITY_SOURCE = 3
-    ENTITY_TARGET = 4
+    FILE_ENTITY = auto()
+    FILE_MAPPING = auto()
+    ENTITY_SOURCE = auto()
+    ENTITY_TARGET = auto()
 
 
 class VertexType(Enum):
@@ -27,32 +26,33 @@ class VertexType(Enum):
     Provides distinct identifiers for each type of node in the graph, including entities, mappings, and files.
     """
 
-    ENTITY = 1
-    MAPPING = 2
-    FILE = 3
-    ERROR = 4
+    ENTITY = auto()
+    MAPPING = auto()
+    FILE = auto()
+    ERROR = auto()
 
 
 class GraphRETWBase:
     def __init__(self):
         self.igraph_type_shape = {
-            VertexType.ENTITY.name: "square",
-            VertexType.FILE.name: "triangle",
-            VertexType.MAPPING.name: "circle",
-            VertexType.ERROR.name: "triangle-down"
+            VertexType.ENTITY: "square",
+            VertexType.FILE: "triangle",
+            VertexType.MAPPING: "circle",
+            VertexType.ERROR: "triangle-down",
         }
         self.pyvis_type_shape = {
-            VertexType.ENTITY.name: "database",
-            VertexType.FILE.name: "square",
-            VertexType.MAPPING.name: "hexagon",
-            VertexType.ERROR.name: "star"
+            VertexType.ENTITY: "database",
+            VertexType.FILE: "square",
+            VertexType.MAPPING: "hexagon",
+            VertexType.ERROR: "star",
         }
         self.node_type_color = {
-            VertexType.ENTITY.name: "gold",
-            VertexType.FILE.name: "silver",
-            VertexType.MAPPING.name: "slateblue",
-            VertexType.ERROR.name: "red"
+            VertexType.ENTITY: "gold",
+            VertexType.FILE: "silver",
+            VertexType.MAPPING: "slateblue",
+            VertexType.ERROR: "red",
         }
+        self.node_position_color = {}
 
     def igraph_to_networkx(self, graph: ig.Graph) -> nx.DiGraph:
         """Converts an igraph into a networkx graph
