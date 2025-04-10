@@ -201,7 +201,7 @@ class MappingDependencies:
 
     def get_mapping_order(self) -> list:
         """Returns mappings and order of running (could be parallel,
-        in which case other subsorting should be implemented if needed)
+        in which case other sub-sorting should be implemented if needed)
 
         Returns:
             list: List of mappings with order
