@@ -95,7 +95,7 @@ class DagETL(GraphRETWFiles):
         # For each node calculate the number of mapping nodes before the current node
         lst_mapping_order = [
             sum(
-                dag.vs[vtx]["role"] == "mapping"
+                dag.vs[vtx]["type"] == VertexType.MAPPING
                 for vtx in dag.subcomponent(dag.vs[i], mode="in")
             )
             - 1
@@ -104,8 +104,8 @@ class DagETL(GraphRETWFiles):
         # Assign valid run order to mappings only
         lst_run_level = []
         lst_run_level.extend(
-            run_level if role == "mapping" else -1
-            for run_level, role in zip(lst_mapping_order, dag.vs["role"])
+            run_level if role == VertexType.MAPPING else -1
+            for run_level, role in zip(lst_mapping_order, dag.vs["type"])
         )
         dag.vs["run_level"] = lst_run_level
         dag = self._dag_mapping_run_level_stages(dag=dag)
@@ -122,7 +122,7 @@ class DagETL(GraphRETWFiles):
         """
         dict_level_runs = {}
         # All mapping nodes
-        nodes_mapping = dag.vs.select(role_eq="mapping")
+        nodes_mapping = dag.vs.select(type_eq=VertexType.MAPPING)
 
         # Determine run stages of mappings by run level
         run_levels = list({node["run_level"] for node in nodes_mapping})
@@ -194,13 +194,13 @@ class DagETL(GraphRETWFiles):
         for i in range(dag.vcount()):
             lst_vertices = dag.subcomponent(dag.vs[i], mode="in")
             level = len(
-                [vtx for vtx in lst_vertices if dag.vs[vtx]["role"] == "mapping"]
+                [vtx for vtx in lst_vertices if dag.vs[vtx]["type"] == VertexType.MAPPING]
             )
-            if dag.vs[i]["role"] == "entity" and level == 1:
+            if dag.vs[i]["type"] == VertexType.ENTITY and level == 1:
                 level = 2
-            elif dag.vs[i]["role"] == "mapping" and level > 1:
+            elif dag.vs[i]["type"] == VertexType.MAPPING and level > 1:
                 level += 1
-            elif dag.vs[i]["role"] == "entity" and level > 1:
+            elif dag.vs[i]["type"] == VertexType.ENTITY and level > 1:
                 level += 2
             lst_level.append(level)
         dag.vs["level"] = lst_level
@@ -220,20 +220,88 @@ class DagETL(GraphRETWFiles):
             for vtx in range(
                 dag.vcount()
             )  # Iterate over all vertices to find the true max level.
-            if dag.vs[vtx]["position"] == "end"
+            if dag.vs[vtx]["position"] == ObjectPosition.END
         )
         for i in range(dag.vcount()):
-            if dag.vs[i]["position"] == "end":
+            if dag.vs[i]["position"] == ObjectPosition.END:
                 dag.vs[i]["level"] = level_max
         return dag
 
-    def plot_dag_html(self, dag: nx.DiGraph, file_html_out: str) -> None:
+    def _set_node_attributes_pyvis(self, dag: ig.Graph) -> ig.Graph:
+        """Set node and edge attributes for pyvis visualization.
+
+        Sets visual attributes (shape, shadow, tooltip) for nodes and edges in the DAG
+        to be used in the pyvis visualization.
+        """
+        # Set visual node properties
+        for node in dag.vs:
+            node["shape"] = "database" if node["type"] == VertexType.ENTITY else "hexagon"
+            node["shadow"] = True
+            self._set_node_tooltip_pyvis(node)
+        # Set edge attributes
+        # FIXME: does nothing at the moment, lost in igraph to networkx conversion
+        for edge in dag.es:
+            edge["color"] = "darkslategrey"
+            edge["shadow"] = True
+        return dag
+
+    def _set_node_tooltip_pyvis(self, node: ig.Vertex):
+        """Set the tooltip for a node in the pyvis visualization.
+
+        Sets the 'title' attribute of the node, which is used as a tooltip in pyvis,
+        containing detailed information about the node.
+
+        Args:
+            node (ig.Vertex): The node to set the tooltip for.
+        """
+        node["title"] = f"""Type: {node["type"]}\n
+                    Id: {node["name"]}
+                    Name: {node["Name"]}
+                    Code: {node["Code"]}
+                """
+        if node["type"] == VertexType.MAPPING:
+            node["title"] = (
+                node["title"]
+                + f"""
+                    Run level: {str(node["run_level"])}
+                    Run level stage: {str(node["run_level_stage"])}
+                    CreationDate: {node["CreationDate"]}
+                    Creator: {node["Creator"]}
+                    ModificationDate: {node["ModificationDate"]}
+                    Modifier: {node["Modifier"]}
+                """
+            )
+        else:
+            node["title"] = (
+                node["title"]
+                + f"""
+                Id Model: {node["IdModel"]}
+                Name Model: {node["NameCodel"]}
+                Code Model: {node["CodeModel"]}
+                Is Target: {node["IsDocumentModel"]}
+                """
+            )
+
+    def _get_dag_networkx(self) -> nx.DiGraph:
+        """Get the DAG as a NetworkX graph.
+
+        Retrieves the DAG, sets node attributes for pyvis visualization,
+        and converts it to a NetworkX graph.
+
+        Returns:
+            nx.DiGraph: The DAG as a NetworkX graph.
+        """
+        dag = self._build_dag_mappings()
+        dag = self._set_node_attributes_pyvis(dag=dag)
+        return self._igraph_to_networkx(dag=dag)
+
+    def plot_dag_html(self, file_html: str) -> None:
         """Create a html file with a graphical representation of a networkx graph
 
         Args:
-            dag (nx.DiGraph): Networkx DAG
             file_html_out (str): file path that the result should be written to
         """
+        dag = self._get_dag_networkx()
         net = Network("900px", "1917px", directed=True, layout=True)
         net.from_nx(dag)
         net.options.layout.hierarchical.sortMethod = "directed"
@@ -243,7 +311,7 @@ class DagETL(GraphRETWFiles):
         net.toggle_physics(True)
         for edge in net.edges:
             edge["shadow"] = True
-        net.show(file_html_out, notebook=False)
+        net.show(file_html, notebook=False)
 
 
 def main():
@@ -258,6 +326,7 @@ def main():
     dag_ETL = DagETL()
     dag_ETL.add_RETW_files(files_RETW=lst_files_RETW)
     dag_ETL.plot_dag_png(file_png=file_mappings_png)
+    dag_ETL.plot_dag_html(file_html=file_mappings_html)
 
 
 if __name__ == "__main__":
