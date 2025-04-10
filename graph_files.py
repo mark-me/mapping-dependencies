@@ -74,7 +74,7 @@ class GraphRETWFiles(GraphRETWBase):
             {
                 id_file: {
                     "name": id_file,
-                    "type": VertexType.FILE,
+                    "type": VertexType.FILE.name,
                     "Order": order_added,
                     "FileRETW": file_RETW,
                     "TimeCreated": Path(file_RETW).stat().st_ctime,
@@ -112,7 +112,7 @@ class GraphRETWFiles(GraphRETWBase):
             dict_entity = {
                 id_entity: {
                     "name": id_entity,
-                    "type": VertexType.ENTITY,
+                    "type": VertexType.ENTITY.name,
                     "Id": entity["Id"],
                     "Name": entity["Name"],
                     "Code": entity["Code"],
@@ -125,7 +125,7 @@ class GraphRETWFiles(GraphRETWBase):
             edge_entity_file = {
                 "source": id_file,
                 "target": id_entity,
-                "type": EdgeType.FILE_ENTITY,
+                "type": EdgeType.FILE_ENTITY.name,
                 "CreationDate": entity["CreationDate"],
                 "Creator": entity["Creator"],
                 "ModificationDate": entity["ModificationDate"],
@@ -152,7 +152,7 @@ class GraphRETWFiles(GraphRETWBase):
             mapping = {
                 id_mapping: {
                     "name": id_mapping,
-                    "type": VertexType.MAPPING,
+                    "type": VertexType.MAPPING.name,
                     "Id": mapping_RETW["Id"],
                     "Name": mapping_RETW["Name"],
                     "Code": mapping_RETW["Code"],
@@ -166,7 +166,7 @@ class GraphRETWFiles(GraphRETWBase):
             edge_mapping_file = {
                 "source": id_file,
                 "target": id_mapping,
-                "type": EdgeType.FILE_MAPPING,
+                "type": EdgeType.FILE_MAPPING.name,
                 "CreationDate": mapping_RETW["CreationDate"],
                 "Creator": mapping_RETW["Creator"],
                 "ModificationDate": mapping_RETW["ModificationDate"],
@@ -195,7 +195,7 @@ class GraphRETWFiles(GraphRETWBase):
             entity = {
                 id_entity: {
                     "name": id_entity,
-                    "type": VertexType.ENTITY,
+                    "type": VertexType.ENTITY.name,
                     "Id": source_entity["Id"],
                     "Name": source_entity["Name"],
                     "Code": source_entity["Code"],
@@ -207,7 +207,7 @@ class GraphRETWFiles(GraphRETWBase):
             edge_entity_mapping = {
                 "source": id_entity,
                 "target": id_mapping,
-                "type": EdgeType.ENTITY_SOURCE,
+                "type": EdgeType.ENTITY_SOURCE.name,
             }
             self.edges.append(edge_entity_mapping)
 
@@ -229,7 +229,7 @@ class GraphRETWFiles(GraphRETWBase):
         entity = {
             id_entity: {
                 "name": id_entity,
-                "type": VertexType.ENTITY,
+                "type": VertexType.ENTITY.name,
                 "Id": target_entity["Id"],
                 "Name": target_entity["Name"],
                 "Code": target_entity["Code"],
@@ -241,7 +241,7 @@ class GraphRETWFiles(GraphRETWBase):
         edge_entity_mapping = {
             "source": id_mapping,
             "target": id_entity,
-            "type": EdgeType.ENTITY_TARGET,
+            "type": EdgeType.ENTITY_TARGET.name,
         }
         self.edges.append(edge_entity_mapping)
 

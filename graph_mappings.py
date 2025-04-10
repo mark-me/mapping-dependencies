@@ -22,7 +22,7 @@ class DagETL(GraphRETWFiles):
 
     def _build_dag_mappings(self) -> ig.Graph:
         vertices = list(self.mappings.values()) + list(self.entities.values())
-        edge_types = [EdgeType.ENTITY_SOURCE, EdgeType.ENTITY_TARGET]
+        edge_types = [EdgeType.ENTITY_SOURCE.name, EdgeType.ENTITY_TARGET.name]
         edges = [v for v in self.edges if v["type"] in edge_types]
         dag = ig.Graph.DictList(vertices=vertices, edges=edges, directed=True)
         dag = self._dag_node_position_category(dag=dag)
@@ -49,13 +49,13 @@ class DagETL(GraphRETWFiles):
         lst_entity_position = []
         for qty_in, qty_out in zip(dag.vs["qty_in"], dag.vs["qty_out"]):
             if qty_in == 0 and qty_out > 0:
-                position = ObjectPosition.START
+                position = ObjectPosition.START.name
             elif qty_in > 0 and qty_out > 0:
-                position = ObjectPosition.INTERMEDIATE
+                position = ObjectPosition.INTERMEDIATE.name
             elif qty_in > 0 and qty_out == 0:
-                position = ObjectPosition.END
+                position = ObjectPosition.END.name
             else:
-                position = ObjectPosition.UNDETERMINED
+                position = ObjectPosition.UNDETERMINED.name
             lst_entity_position.append(position)
         dag.vs["position"] = lst_entity_position
         return dag
@@ -95,7 +95,7 @@ class DagETL(GraphRETWFiles):
         # For each node calculate the number of mapping nodes before the current node
         lst_mapping_order = [
             sum(
-                dag.vs[vtx]["type"] == VertexType.MAPPING
+                dag.vs[vtx]["type"] == VertexType.MAPPING.name
                 for vtx in dag.subcomponent(dag.vs[i], mode="in")
             )
             - 1
@@ -104,7 +104,7 @@ class DagETL(GraphRETWFiles):
         # Assign valid run order to mappings only
         lst_run_level = []
         lst_run_level.extend(
-            run_level if role == VertexType.MAPPING else -1
+            run_level if role == VertexType.MAPPING.name else -1
             for run_level, role in zip(lst_mapping_order, dag.vs["type"])
         )
         dag.vs["run_level"] = lst_run_level
@@ -122,7 +122,7 @@ class DagETL(GraphRETWFiles):
         """
         dict_level_runs = {}
         # All mapping nodes
-        nodes_mapping = dag.vs.select(type_eq=VertexType.MAPPING)
+        nodes_mapping = dag.vs.select(type_eq=VertexType.MAPPING.name)
 
         # Determine run stages of mappings by run level
         run_levels = list({node["run_level"] for node in nodes_mapping})
@@ -194,13 +194,13 @@ class DagETL(GraphRETWFiles):
         for i in range(dag.vcount()):
             lst_vertices = dag.subcomponent(dag.vs[i], mode="in")
             level = len(
-                [vtx for vtx in lst_vertices if dag.vs[vtx]["type"] == VertexType.MAPPING]
+                [vtx for vtx in lst_vertices if dag.vs[vtx]["type"] == VertexType.MAPPING.name]
             )
-            if dag.vs[i]["type"] == VertexType.ENTITY and level == 1:
+            if dag.vs[i]["type"] == VertexType.ENTITY.name and level == 1:
                 level = 2
-            elif dag.vs[i]["type"] == VertexType.MAPPING and level > 1:
+            elif dag.vs[i]["type"] == VertexType.MAPPING.name and level > 1:
                 level += 1
-            elif dag.vs[i]["type"] == VertexType.ENTITY and level > 1:
+            elif dag.vs[i]["type"] == VertexType.ENTITY.name and level > 1:
                 level += 2
             lst_level.append(level)
         dag.vs["level"] = lst_level
@@ -220,10 +220,10 @@ class DagETL(GraphRETWFiles):
             for vtx in range(
                 dag.vcount()
             )  # Iterate over all vertices to find the true max level.
-            if dag.vs[vtx]["position"] == ObjectPosition.END
+            if dag.vs[vtx]["position"] == ObjectPosition.END.name
         )
         for i in range(dag.vcount()):
-            if dag.vs[i]["position"] == ObjectPosition.END:
+            if dag.vs[i]["position"] == ObjectPosition.END.name:
                 dag.vs[i]["level"] = level_max
         return dag
 
@@ -235,7 +235,7 @@ class DagETL(GraphRETWFiles):
         """
         # Set visual node properties
         for node in dag.vs:
-            node["shape"] = "database" if node["type"] == VertexType.ENTITY else "hexagon"
+            node["shape"] = "database" if node["type"] == VertexType.ENTITY.name else "hexagon"
             node["shadow"] = True
             self._set_node_tooltip_pyvis(node)
         # Set edge attributes
@@ -254,12 +254,13 @@ class DagETL(GraphRETWFiles):
         Args:
             node (ig.Vertex): The node to set the tooltip for.
         """
+        test = node.attribute_names()
         node["title"] = f"""Type: {node["type"]}\n
-                    Id: {node["name"]}
+                    Id: {node["Id"]}
                     Name: {node["Name"]}
                     Code: {node["Code"]}
                 """
-        if node["type"] == VertexType.MAPPING:
+        if node["type"] == VertexType.MAPPING.name:
             node["title"] = (
                 node["title"]
                 + f"""
@@ -276,9 +277,7 @@ class DagETL(GraphRETWFiles):
                 node["title"]
                 + f"""
                 Id Model: {node["IdModel"]}
-                Name Model: {node["NameCodel"]}
                 Code Model: {node["CodeModel"]}
-                Is Target: {node["IsDocumentModel"]}
                 """
             )
 
@@ -293,7 +292,7 @@ class DagETL(GraphRETWFiles):
         """
         dag = self._build_dag_mappings()
         dag = self._set_node_attributes_pyvis(dag=dag)
-        return self._igraph_to_networkx(dag=dag)
+        return self.igraph_to_networkx(graph=dag)
 
     def plot_dag_html(self, file_html: str) -> None:
         """Create a html file with a graphical representation of a networkx graph

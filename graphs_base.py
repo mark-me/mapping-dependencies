@@ -35,22 +35,22 @@ class VertexType(Enum):
 class GraphRETWBase:
     def __init__(self):
         self.igraph_type_shape = {
-            VertexType.ENTITY: "square",
-            VertexType.FILE: "triangle",
-            VertexType.MAPPING: "circle",
-            VertexType.ERROR: "triangle-down",
+            VertexType.ENTITY.name: "square",
+            VertexType.FILE.name: "triangle",
+            VertexType.MAPPING.name: "circle",
+            VertexType.ERROR.name: "triangle-down",
         }
         self.pyvis_type_shape = {
-            VertexType.ENTITY: "database",
-            VertexType.FILE: "square",
-            VertexType.MAPPING: "hexagon",
-            VertexType.ERROR: "star",
+            VertexType.ENTITY.name: "database",
+            VertexType.FILE.name: "square",
+            VertexType.MAPPING.name: "hexagon",
+            VertexType.ERROR.name: "star",
         }
         self.node_type_color = {
-            VertexType.ENTITY: "gold",
-            VertexType.FILE: "silver",
-            VertexType.MAPPING: "slateblue",
-            VertexType.ERROR: "red",
+            VertexType.ENTITY.name: "gold",
+            VertexType.FILE.name: "silver",
+            VertexType.MAPPING.name: "slateblue",
+            VertexType.ERROR.name: "red",
         }
         self.node_position_color = {}
 
