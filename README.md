@@ -21,8 +21,8 @@ In a Power Designer document (and the corresponding RETW file), all objects are 
 erDiagram
 Entity ||--|{ Entity-role: "Has a"
 Mapping ||--|{ Entity-role: "Uses"
-Document ||--o{ Mapping: "Created"
-Document ||--o{ Entity: "Created"
+RETW_File ||--o{ Mapping: "Created"
+RETW_File ||--o{ Entity: "Created"
 ```
 
 This translated to the following three types nodes with attributes
@@ -59,7 +59,7 @@ The ordering of mappings can be determined using ```mapping_order.py``` and chan
 The running order of mappings is determined by two components:
 
 * Run level: where in the DAG hierarchy, going from source entities to end entities, is the mapping positioned. The mappings taking in only source entities are set at run level 0, the next run levels are determined by the number of mappings in the hierarchy running before the mapping under consideration.
-* Run level stage: If mappings on the same run level share the same entities they should get different concurrency ordering to prevent deadlocking. A [greedy colouring algorithm](https://www.youtube.com/watch?v=vGjsi8NIpSE) is used to determine the run order of mappings within a run level.
+* Run level stage: If mappings on the same run level share the same entities they should get different concurrency ordering to prevent deadlocking. A [greedy coloring algorithm](https://www.youtube.com/watch?v=vGjsi8NIpSE) is used to determine the run order of mappings within a run level.
 
 ```mermaid
 graph LR
