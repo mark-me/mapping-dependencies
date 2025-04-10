@@ -52,7 +52,7 @@ class GraphRETWBase:
             VertexType.MAPPING.name: "slateblue",
             VertexType.ERROR.name: "red",
         }
-        self.node_position_color = {}
+
 
     def igraph_to_networkx(self, graph: ig.Graph) -> nx.DiGraph:
         """Converts an igraph into a networkx graph

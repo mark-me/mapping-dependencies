@@ -19,6 +19,12 @@ class ObjectPosition(Enum):
 class DagETL(GraphRETWFiles):
     def __init__(self):
         super().__init__()
+        self.node_position_color = {
+            ObjectPosition.START.name: "gold",
+            ObjectPosition.INTERMEDIATE.name: "yellowgreen",
+            ObjectPosition.END.name: "lawngreen",
+            ObjectPosition.UNDETERMINED.name: "red",
+        }
 
     def _build_dag_mappings(self) -> ig.Graph:
         vertices = list(self.mappings.values()) + list(self.entities.values())
@@ -237,6 +243,7 @@ class DagETL(GraphRETWFiles):
         for node in dag.vs:
             node["shape"] = "database" if node["type"] == VertexType.ENTITY.name else "hexagon"
             node["shadow"] = True
+            self._set_node_color_pyvis(node)
             self._set_node_tooltip_pyvis(node)
         # Set edge attributes
         # FIXME: does nothing at the moment, lost in igraph to networkx conversion
@@ -245,7 +252,24 @@ class DagETL(GraphRETWFiles):
             edge["shadow"] = True
         return dag
 
-    def _set_node_tooltip_pyvis(self, node: ig.Vertex):
+    def _set_node_color_pyvis(self, node: ig.Vertex) -> None:
+        """Set the color of each node in the DAG based on its role and position.
+
+        Assigns colors to nodes for visual differentiation based on whether they are mappings or entities,
+        and their position in the DAG (start, intermediate, end).
+
+        Args:
+            dag (ig.Graph): The DAG to process.
+
+        Returns:
+            ig.Graph: The DAG with node colors set.
+        """
+        if node["type"] == VertexType.MAPPING.name:
+            node["color"] = self.node_type_color[node["type"]]
+        else:
+            node["color"] = self.node_position_color[node["position"]]
+
+    def _set_node_tooltip_pyvis(self, node: ig.Vertex) -> None:
         """Set the tooltip for a node in the pyvis visualization.
 
         Sets the 'title' attribute of the node, which is used as a tooltip in pyvis,
@@ -254,7 +278,6 @@ class DagETL(GraphRETWFiles):
         Args:
             node (ig.Vertex): The node to set the tooltip for.
         """
-        test = node.attribute_names()
         node["title"] = f"""Type: {node["type"]}\n
                     Id: {node["Id"]}
                     Name: {node["Name"]}
