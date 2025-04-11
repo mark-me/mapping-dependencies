@@ -72,17 +72,17 @@ graph LR
   idEg[(Entity g)]
   idEh[(Entity h)]
 
-  subgraph run_level: 0
-    subgraph run_level_stage: 0
+  subgraph RunLevel: 0
+    subgraph RunLevelStage: 0
       idMa{{Mapping a}}
     end
-    subgraph run_level_stage: 1
+    subgraph RunLevelStage: 1
       idMb{{Mapping b}}
       idMc{{Mapping c}}
     end
   end
-  subgraph run_level: 1
-    subgraph run_level_stage: 0
+  subgraph RunLevel: 1
+    subgraph RunLevelStage: 0
       idMd{{Mapping d}}
     end
   end
