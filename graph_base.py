@@ -9,18 +9,6 @@ from log_config import logging
 logger = logging.getLogger(__name__)
 
 
-class EdgeType(Enum):
-    """Enumerates the types of edges in the graph.
-
-    Provides distinct identifiers for each type of edge in the graph, representing relationships between files, mappings, and entities.
-    """
-
-    FILE_ENTITY = auto()
-    FILE_MAPPING = auto()
-    ENTITY_SOURCE = auto()
-    ENTITY_TARGET = auto()
-
-
 class VertexType(Enum):
     """Enumerates the types of vertices in the graph.
 
@@ -32,6 +20,17 @@ class VertexType(Enum):
     FILE = auto()
     ERROR = auto()
 
+
+class EdgeType(Enum):
+    """Enumerates the types of edges in the graph.
+
+    Provides distinct identifiers for each type of edge in the graph, representing relationships between files, mappings, and entities.
+    """
+
+    FILE_ENTITY = auto()
+    FILE_MAPPING = auto()
+    ENTITY_SOURCE = auto()
+    ENTITY_TARGET = auto()
 
 class GraphRETWBase:
     def __init__(self):
