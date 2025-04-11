@@ -12,18 +12,19 @@ The mapping dependency parser uses [graphs](https://en.wikipedia.org/wiki/Graph_
 
 For each RETW file, the mappings are extracted and the mappings, source- and target entities are turned into nodes (sometimes called vertices). Then there are links created (sometimes called edges) between the source entities and the mappings and the mappings and target entity. If all mappings are parsed into their nodes and edges they can be combined to form a network. This network representation allows the calculations to be performed for the objectives stated in the introduction.
 
+```mermaid
+erDiagram
+ENTITY ||--|{ MAPPING: "Filled by: ENTITY_TARGET"
+MAPPING ||--|{ ENTITY: "Feeds from: ENTITY_SOURCE"
+FILE_RETW ||--o{ MAPPING: "Created: FILE_MAPPING"
+FILE_RETW ||--o{ ENTITY: "Created: FILE_ENTITY"
+```
+
 In a Power Designer document (and the corresponding RETW file), all objects are identified by their 'Id' attribute which for example looks like 'o123'. This Id is internal to a document, but is not suitable for identification when we combine the RETW results of multiple Power Designer documents. For this purpose new identifiers must be created so we have no conflicting identifiers across Power Designer documents, but also maintain integrity where the target entity of one document, might serve as a source entity for a mapping in another Power Designer document. How do is this achieved?
 
 * We assume mappings are unique across Power Designer documents. To build a mapping identifier a hash is applied to the combination of the RETW filename and the mapping object ID.
 * To maintain consistency identification of entities across Power Designer documents a hash is applied to the combination of the Code and CodeModel properties of an entity.
 
-```mermaid
-erDiagram
-Entity ||--|{ Entity-role: "Has a"
-Mapping ||--|{ Entity-role: "Uses"
-RETW_File ||--o{ Mapping: "Created"
-RETW_File ||--o{ Entity: "Created"
-```
 
 ## Mapping order
 
