@@ -2,6 +2,7 @@ from enum import Enum, auto
 
 import igraph as ig
 import networkx as nx
+from pyvis.network import Network
 
 from log_config import logging
 
@@ -76,3 +77,22 @@ class GraphRETWBase:
         lst_edges.extend((edge["source"], edge["target"]) for edge in lst_edges_igraph)
         dag_nx.add_edges_from(lst_edges)
         return dag_nx
+
+    def plot_graph_html(self, graph: ig.Graph, file_html: str) -> None:
+        """Create a html file with a graphical representation of a networkx graph
+
+        Args:
+            dag (nx.DiGraph): Networkx DAG
+            file_html_out (str): file path that the result should be written to
+        """
+        net = Network("900px", "1917px", directed=True, layout=True)
+        graph = self.igraph_to_networkx(graph=graph)
+        net.from_nx(graph)
+        net.options.layout.hierarchical.sortMethod = "directed"
+        net.options.physics.solver = "hierarchicalRepulsion"
+        net.options.edges.smooth = False
+        net.options.interaction.navigationButtons = True
+        net.toggle_physics(True)
+        for edge in net.edges:
+            edge["shadow"] = True
+        net.show(file_html, notebook=False)

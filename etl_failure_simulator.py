@@ -1,15 +1,14 @@
 import json
 
 import igraph as ig
-import networkx as nx
 
 from log_config import logging
-from mapping_order import MappingDependencies
+from dag_etl import DagETL, VertexType
 
 logger = logging.getLogger(__name__)
 
 
-class MappingSimulator(MappingDependencies):
+class ETLFailureSimulator(DagETL):
     def __init__(self):
         """Initialize the MappingSimulator.
 
@@ -35,7 +34,7 @@ class MappingSimulator(MappingDependencies):
             )
         self.nodes_affected = list(set(nodes_affected))
         # Set visual attributes accordingly
-        self._set_node_attributes_pyvis(dag=self.dag)
+        self._set_attributes_pyvis(dag=self.dag)
         for id_node in self.nodes_affected:
             node = self.dag.vs[id_node]
             if id_node in self.nodes_failed:
@@ -44,7 +43,7 @@ class MappingSimulator(MappingDependencies):
             else:
                 node["color"] = "tomato"
 
-    def set_entities_failed(self, node_ids: list) -> nx.DiGraph:
+    def set_entities_failed(self, node_ids: list) -> None:
         """Sets the status of an entity (or mapping) to failed, and derives the consequences in the ETL DAG.
 
         Args:
@@ -53,14 +52,12 @@ class MappingSimulator(MappingDependencies):
         Returns:
             nx.DiGraph: A networkx graph with the failure and it's consequences.
         """
-        self.dag = self.get_dag()
+        self.dag = self._build_dag_mappings()
         for node_id in node_ids:
-            self.nodes_failed.append(self.dag.vs.find(name=node_id).index)
+            self.nodes_failed.append(self.dag.vs.find(Id=node_id).index)
         self._derive_affected()
-        network = self._igraph_to_networkx(dag=self.dag)
-        return network
 
-    def _get_affected_nodes(self, filter_role: str) -> dict:
+    def _get_affected_nodes(self, filter_type: str) -> dict:
         """Get the nodes in the DAG, categorized by failures and affected.
 
         Args:
@@ -74,8 +71,8 @@ class MappingSimulator(MappingDependencies):
         lst_affected = []
         for id_node in self.nodes_affected:
             node = self.dag.vs[id_node]
-            if node["role"] == filter_role:
-                dict_mapping = {key: node[key] for key in self.keys_mapping}
+            if node["type"] == filter_type:
+                dict_mapping = {key: node[key] for key in node.attribute_names()}
                 if id_node in self.nodes_failed:
                     lst_failed.append(dict_mapping)
                 else:
@@ -93,36 +90,35 @@ class MappingSimulator(MappingDependencies):
             dict: Report on mappings and entities that failed or are affected by the failure
         """
         dict_fallout = {
-            "Mappings": self._get_affected_nodes(filter_role="mapping"),
-            "Entities": self._get_affected_nodes(filter_role="entity"),
+            "Mappings": self._get_affected_nodes(filter_type=VertexType.MAPPING.name),
+            "Entities": self._get_affected_nodes(filter_type=VertexType.ENTITY.name),
         }
         return dict_fallout
 
+    def plot_dag_fallout(self, file_html: str) -> None:
+        self._set_attributes_pyvis(dag=self.dag)
+        self._derive_affected()
+        self.plot_graph_html(graph=self.dag, file_html=file_html)
+
 
 def main():
-    lst_files_RETW = ["output/Usecase_Aangifte_Behandeling.json"]
+    lst_files_RETW = [
+        "output/Usecase_Aangifte_Behandeling(1).json",
+        "output/Usecase_Test_BOK.json",
+    ]
     lst_id_entities_failed = ["o71", "o207"]
 
-    mapping_simulator = MappingSimulator()
-
+    etl_simulator = ETLFailureSimulator()
     # Adding RETW files to generate complete ETL DAG
-    for file_RETW in lst_files_RETW:
-        if mapping_simulator.add_RETW_file(file_RETW=file_RETW):
-            logger.info(f"Added RETW file '{file_RETW}'")
-        else:
-            logger.error(f"Failed to add RETW file '{file_RETW}'")
-            return
-
+    etl_simulator.add_RETW_files(files_RETW=lst_files_RETW)
     # Set failed node
-    dag = mapping_simulator.set_entities_failed(lst_id_entities_failed)
-
+    etl_simulator.set_entities_failed(lst_id_entities_failed)
     # Create fallout report file
-    dict_fallout = mapping_simulator.get_report_fallout()
+    dict_fallout = etl_simulator.get_report_fallout()
     with open("output/dag_run_fallout.json", "w", encoding="utf-8") as file:
         json.dump(dict_fallout, file, indent=4)
-
     # Create fallout visualization
-    mapping_simulator.plot_dag_networkx(dag, file_html_out="output/dag_run_report.html")
+    etl_simulator.plot_dag_fallout(file_html="output/dag_run_report.html")
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import igraph as ig
 
-from graphs_base import EdgeType, GraphRETWBase, VertexType
+from graph_base import EdgeType, GraphRETWBase, VertexType
 from log_config import logging
 
 logger = logging.getLogger(__name__)
@@ -15,6 +15,7 @@ class GraphRETWFiles(GraphRETWBase):
     This class extends GraphRETWBase and provides functionalities to build and visualize a graph
     representing relationships between RETW files, mappings, and entities.
     """
+
     def __init__(self):
         """Initializes a new instance of the GraphRETWFiles class.
 
@@ -199,7 +200,6 @@ class GraphRETWFiles(GraphRETWBase):
                     "Id": source_entity["Id"],
                     "Name": source_entity["Name"],
                     "Code": source_entity["Code"],
-                    "IdModel": source_entity["Id"],
                     "CodeModel": source_entity["CodeModel"],
                 }
             }
@@ -233,7 +233,6 @@ class GraphRETWFiles(GraphRETWBase):
                 "Id": target_entity["Id"],
                 "Name": target_entity["Name"],
                 "Code": target_entity["Code"],
-                "IdModel": target_entity["Id"],
                 "CodeModel": target_entity["CodeModel"],
             }
         }
@@ -264,27 +263,128 @@ class GraphRETWFiles(GraphRETWBase):
         logger.info("Build graph total")
         return graph
 
-    def plot_graph_total(self, file_png: str=None) -> ig.Graph:
-        """Plot the total graph and save it to a PNG file.
+    def _set_attributes_pyvis(self, graph: ig.Graph) -> ig.Graph:
+        """Set attributes for pyvis visualization.
 
-        Creates the entire graph, including files, mappings, and entities, with appropriate colors and shapes for each node type.
-        The visualization can be saved to a specified PNG file.
+        Sets the shape, shadow, color, and tooltip for each node in the graph
+        based on their type and other properties. Also sets the shadow for edges.
 
         Args:
-            file_png (str, optional): The path to the PNG file where the plot will be saved. Defaults to None.
+            graph (ig.Graph): The igraph graph to set attributes for.
 
         Returns:
-            ig.Graph: The graph that was plotted.
+            ig.Graph: The graph with attributes set for pyvis visualization.
+        """
+        for node in graph.vs:
+            node["shape"] = self.pyvis_type_shape[node["type"]]
+            node["shadow"] = True
+            node["color"] = self.node_type_color[node["type"]]
+            self._set_node_tooltip_pyvis(node)
+        # Set edge attributes
+        # FIXME: does nothing at the moment, lost in igraph to networkx conversion
+        for edge in graph.es:
+            edge["shadow"] = True
+        return graph
+
+    def _set_node_tooltip_pyvis(self, node: ig.Vertex) -> None:
+        """Set the tooltip for a node in the pyvis visualization.
+
+        Sets the 'title' attribute of the node, which is used as a tooltip in pyvis,
+        containing detailed information about the node.
+
+        Args:
+            node (ig.Vertex): The node to set the tooltip for.
+        """
+        if node["type"] == VertexType.FILE.name:
+            node["title"] = f"""FileRETW: {node["FileRETW"]}
+                    Order: {node["Order"]}
+                    Created: {node["TimeCreated"]}
+                    Modified: {node["TimeModified"]}"""
+        if node["type"] in [VertexType.MAPPING.name, VertexType.ENTITY.name]:
+            node["title"] = f"""Name: {node["Name"]}
+                        Code: {node["Code"]}
+                        Id: {node["Id"]}
+                    """
+        if node["type"] == VertexType.MAPPING.name:
+            node["title"] = (
+                node["title"]
+                + f"""
+                    CreationDate: {node["CreationDate"]}
+                    Creator: {node["Creator"]}
+                    ModificationDate: {node["ModificationDate"]}
+                    Modifier: {node["Modifier"]}
+                """
+            )
+        elif node["type"] == VertexType.ENTITY.name:
+            node["title"] = node["title"] + f"Model: {node['CodeModel']}"
+
+    def plot_graph_total(self, file_html: str) -> None:
+        """Plot the total graph and save it to an HTML file.
+
+        Builds the total graph, sets pyvis attributes, and visualizes it in an HTML file.
+
+        Args:
+            file_html (str): The path to the HTML file where the plot will be saved.
+
+        Returns:
+            None
         """
         graph = self._build_graph_total()
-        # Colouring
-        for i in range(graph.vcount()):
-            graph.vs[i]["color"] = self.node_type_color[graph.vs[i]["type"]]
-            graph.vs[i]["shape"] = self.igraph_type_shape[graph.vs[i]["type"]]
-        logger.info(f"Wrote total graph to '{file_png}'")
-        if file_png is not None:
-            ig.plot(graph, file_png)
-        return graph
+        graph = self._set_attributes_pyvis(graph=graph)
+        self.plot_graph_html(graph=graph, file_html=file_html)
+
+
+    def plot_graph_retw_file(self, file_retw: str, file_html: str) -> None:
+        """Plot the graph for a specific RETW file.
+
+        Builds the total graph, selects the subgraph related to a specific RETW file,
+        sets pyvis attributes, and visualizes it in an HTML file.
+
+        Args:
+            file_retw (str): Path to the RETW file.
+            file_html (str): Path to the output HTML file.
+
+        Returns:
+            None
+        """
+        graph = self._build_graph_total()
+        vx_file = graph.vs.select(FileRETW_eq=file_retw)
+        vx_file_graph = graph.subcomponent(vx_file[0], mode="out")
+        vx_delete = [i for i in graph.vs.indices if i not in vx_file_graph]
+        graph.delete_vertices(vx_delete)
+        # Visualization
+        graph = self._set_attributes_pyvis(graph=graph)
+        self.plot_graph_html(graph=graph, file_html=file_html)
+
+    def plot_entity_journey(
+        self, code_model: str, code_entity: str, file_html: str = None
+    ) -> None:
+        """Plot the journey of an entity through the graph.
+
+        Builds the total graph, selects a specific entity based on its code and model,
+        extracts the subgraph representing the entity's journey (incoming and outgoing connections),
+        sets pyvis attributes, converts to NetworkX, and visualizes it in an HTML file.
+
+        Args:
+            code_model (str): The code of the model containing the entity.
+            code_entity (str): The code of the entity.
+            file_html (str, optional): The path to the HTML file where the plot will be saved. Defaults to None.
+
+        Returns:
+            None
+        """
+        graph = self._build_graph_total()
+        # Extract graph for relevant entity
+        vx_model = graph.vs.select(CodeModel_eq=code_model)
+        vx_entity = vx_model.select(Code_eq=code_entity)
+        vx_entity_graph = graph.subcomponent(
+            vx_entity[0], mode="in"
+        ) + graph.subcomponent(vx_entity[0], mode="out")
+        vx_delete = [i for i in graph.vs.indices if i not in vx_entity_graph]
+        graph.delete_vertices(vx_delete)
+        # Visualization
+        graph = self._set_attributes_pyvis(graph=graph)
+        self.plot_graph_html(graph=graph, file_html=file_html)
 
 
 def main():
@@ -293,13 +393,19 @@ def main():
     Processes a list of RETW files, adds them to a MappingDependencies object,
     and generates the mapping order and DAG visualization for each iteration of adding a file.
     """
-    lst_files_RETW = ["output/Usecase_Aangifte_Behandeling.json"]
-    file_plot_total = "output/graph_files_total.png"
+    lst_files_RETW = [
+        "output/Usecase_Aangifte_Behandeling(1).json",
+        "output/Usecase_Test_BOK.json",
+    ]
     graph = GraphRETWFiles()
     graph.add_RETW_files(files_RETW=lst_files_RETW)
-    graph.plot_graph_total(file_png=file_plot_total)
+    graph.plot_graph_total(file_html="output/graph_files_total.html")
+    graph.plot_entity_journey(
+        code_model="Da_Central_CL",
+        code_entity="DmsProcedure",
+        file_html="output/entity_journey.html",
+    )
 
 
 if __name__ == "__main__":
     main()
-

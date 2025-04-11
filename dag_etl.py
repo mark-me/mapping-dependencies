@@ -1,10 +1,8 @@
 from enum import Enum, auto
 
 import igraph as ig
-import networkx as nx
-from pyvis.network import Network
 
-from graph_files import EdgeType, GraphRETWFiles, VertexType
+from graph_retw_files import EdgeType, GraphRETWFiles, VertexType
 from log_config import logging
 
 logger = logging.getLogger(__name__)
@@ -66,28 +64,6 @@ class DagETL(GraphRETWFiles):
             lst_entity_position.append(position)
         dag.vs["position"] = lst_entity_position
         return dag
-
-    def plot_dag_png(self, file_png: str = None) -> ig.Graph:
-        """Plot the DAG of all combined mappings and save it to a PNG file.
-
-        Creates the ETL DAG, with mappings and entities for all files, with appropriate colors and shapes for each node type.
-        The visualization can be saved to a specified PNG file.
-
-        Args:
-            file_png (str, optional): The path to the PNG file where the plot will be saved. Defaults to None.
-
-        Returns:
-            ig.Graph: The graph that was plotted.
-        """
-        graph = self._build_dag_mappings()
-        for i in range(graph.vcount()):
-            # Coloring
-            graph.vs[i]["color"] = self.node_type_color[graph.vs[i]["type"]]
-            graph.vs[i]["shape"] = self.igraph_type_shape[graph.vs[i]["type"]]
-        logger.info(f"Wrote total graph to '{file_png}'")
-        if file_png is not None:
-            ig.plot(graph, file_png)
-        return graph
 
     def _dag_mapping_run_order(self, dag: ig.Graph) -> ig.Graph:
         """Erich the DAG with the sequence the mappings should run in
@@ -236,13 +212,18 @@ class DagETL(GraphRETWFiles):
                 dag.vs[i]["level"] = level_max
         return dag
 
-    def _set_node_attributes_pyvis(self, dag: ig.Graph) -> ig.Graph:
-        """Set node and edge attributes for pyvis visualization.
+    def _set_attributes_pyvis(self, dag: ig.Graph) -> ig.Graph:
+        """Set attributes for pyvis visualization.
 
-        Sets visual attributes (shape, shadow, tooltip) for nodes and edges in the DAG
-        to be used in the pyvis visualization.
+        Sets the shape, shadow, color, and tooltip for each node in the DAG
+        based on their type and other properties. Also sets the shadow for edges.
+
+        Args:
+            dag (ig.Graph): The DAG to set attributes for.
+
+        Returns:
+            ig.Graph: The DAG with attributes set for pyvis visualization.
         """
-        # Set visual node properties
         for node in dag.vs:
             node["shape"] = (
                 "database" if node["type"] == VertexType.ENTITY.name else "hexagon"
@@ -253,7 +234,6 @@ class DagETL(GraphRETWFiles):
         # Set edge attributes
         # FIXME: does nothing at the moment, lost in igraph to networkx conversion
         for edge in dag.es:
-            edge["color"] = "darkslategrey"
             edge["shadow"] = True
         return dag
 
@@ -283,10 +263,9 @@ class DagETL(GraphRETWFiles):
         Args:
             node (ig.Vertex): The node to set the tooltip for.
         """
-        node["title"] = f"""Type: {node["type"]}\n
-                    Id: {node["Id"]}
-                    Name: {node["Name"]}
+        node["title"] = f"""Name: {node["Name"]}
                     Code: {node["Code"]}
+                    Id: {node["Id"]}
                 """
         if node["type"] == VertexType.MAPPING.name:
             node["title"] = (
@@ -303,42 +282,18 @@ class DagETL(GraphRETWFiles):
         else:
             node["title"] = (
                 node["title"]
-                + f"""
-                Id Model: {node["IdModel"]}
-                Code Model: {node["CodeModel"]}
-                """
+                + f"Model: {node["CodeModel"]}"
             )
 
-    def _get_dag_networkx(self) -> nx.DiGraph:
-        """Get the DAG as a NetworkX graph.
-
-        Retrieves the DAG, sets node attributes for pyvis visualization,
-        and converts it to a NetworkX graph.
-
-        Returns:
-            nx.DiGraph: The DAG as a NetworkX graph.
-        """
-        dag = self._build_dag_mappings()
-        dag = self._set_node_attributes_pyvis(dag=dag)
-        return self.igraph_to_networkx(graph=dag)
-
-    def plot_dag_html(self, file_html: str) -> None:
+    def plot_dag(self, file_html: str) -> None:
         """Create a html file with a graphical representation of a networkx graph
 
         Args:
             file_html_out (str): file path that the result should be written to
         """
-        dag = self._get_dag_networkx()
-        net = Network("900px", "1917px", directed=True, layout=True)
-        net.from_nx(dag)
-        net.options.layout.hierarchical.sortMethod = "directed"
-        net.options.physics.solver = "hierarchicalRepulsion"
-        net.options.edges.smooth = False
-        net.options.interaction.navigationButtons = True
-        net.toggle_physics(True)
-        for edge in net.edges:
-            edge["shadow"] = True
-        net.show(file_html, notebook=False)
+        dag = self._build_dag_mappings()
+        dag = self._set_attributes_pyvis(dag=dag)
+        self.plot_graph_html(graph=dag, file_html=file_html)
 
 
 def main():
@@ -351,12 +306,10 @@ def main():
         "output/Usecase_Aangifte_Behandeling(1).json",
         "output/Usecase_Test_BOK.json",
     ]
-    file_mappings_png = "output/test_mappings.png"
     file_mappings_html = "output/test_mappings.html"
     dag_ETL = DagETL()
     dag_ETL.add_RETW_files(files_RETW=lst_files_RETW)
-    dag_ETL.plot_dag_png(file_png=file_mappings_png)
-    dag_ETL.plot_dag_html(file_html=file_mappings_html)
+    dag_ETL.plot_dag(file_html=file_mappings_html)
 
 
 if __name__ == "__main__":
