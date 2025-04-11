@@ -356,8 +356,26 @@ class GraphRETWFiles(GraphRETWBase):
         graph = self._set_attributes_pyvis(graph=graph)
         self.plot_graph_html(graph=graph, file_html=file_html)
 
+    def plot_file_dependencies(self, file_html: str) -> None:
+        graph = self._build_graph_total()
+        vx_files = graph.vs.select(type_eq=VertexType.FILE_RETW.name)
+
+        lst_vertices = [{"name": mapping["mapping"]} for mapping in vx_files]
+        lst_edges = []
+        for a in mapping_sources:
+            for b in mapping_sources:
+                if a["mapping"] < b["mapping"]:
+                    qty_common = len(set(a["sources"]) & set(b["sources"]))
+                    if qty_common > 0:
+                        lst_edges.append(
+                            {"source": a["mapping"], "target": b["mapping"]}
+                        )
+        graph_conflicts = ig.Graph.DictList(
+            vertices=lst_vertices, edges=lst_edges, directed=False
+        )
+
     def plot_entity_journey(
-        self, code_model: str, code_entity: str, file_html: str = None
+        self, code_model: str, code_entity: str, file_html: str
     ) -> None:
         """Plot the journey of an entity through the graph.
 
@@ -409,6 +427,7 @@ def main():
         code_entity="DmsProcedure",
         file_html="output/entity_journey.html",
     )
+    #graph.plot_file_dependencies(file_html="output/file_dependencies.html")
 
 
 if __name__ == "__main__":
