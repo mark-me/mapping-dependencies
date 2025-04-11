@@ -17,7 +17,7 @@ class VertexType(Enum):
 
     ENTITY = auto()
     MAPPING = auto()
-    FILE = auto()
+    FILE_RETW = auto()
     ERROR = auto()
 
 
@@ -36,19 +36,19 @@ class GraphRETWBase:
     def __init__(self):
         self.igraph_type_shape = {
             VertexType.ENTITY.name: "square",
-            VertexType.FILE.name: "triangle",
+            VertexType.FILE_RETW.name: "triangle",
             VertexType.MAPPING.name: "circle",
             VertexType.ERROR.name: "triangle-down",
         }
         self.pyvis_type_shape = {
             VertexType.ENTITY.name: "database",
-            VertexType.FILE.name: "square",
+            VertexType.FILE_RETW.name: "square",
             VertexType.MAPPING.name: "hexagon",
             VertexType.ERROR.name: "star",
         }
         self.node_type_color = {
             VertexType.ENTITY.name: "gold",
-            VertexType.FILE.name: "silver",
+            VertexType.FILE_RETW.name: "silver",
             VertexType.MAPPING.name: "slateblue",
             VertexType.ERROR.name: "red",
         }

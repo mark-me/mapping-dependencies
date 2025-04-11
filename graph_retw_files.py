@@ -75,7 +75,7 @@ class GraphRETWFiles(GraphRETWBase):
             {
                 id_file: {
                     "name": id_file,
-                    "type": VertexType.FILE.name,
+                    "type": VertexType.FILE_RETW.name,
                     "Order": order_added,
                     "FileRETW": file_RETW,
                     "TimeCreated": Path(file_RETW).stat().st_ctime,
@@ -295,7 +295,7 @@ class GraphRETWFiles(GraphRETWBase):
         Args:
             node (ig.Vertex): The node to set the tooltip for.
         """
-        if node["type"] == VertexType.FILE.name:
+        if node["type"] == VertexType.FILE_RETW.name:
             node["title"] = f"""FileRETW: {node["FileRETW"]}
                     Order: {node["Order"]}
                     Created: {node["TimeCreated"]}
