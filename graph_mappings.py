@@ -16,6 +16,7 @@ class ObjectPosition(Enum):
     END = auto()
     UNDETERMINED = auto()
 
+
 class DagETL(GraphRETWFiles):
     def __init__(self):
         super().__init__()
@@ -196,20 +197,19 @@ class DagETL(GraphRETWFiles):
         Returns:
             ig.Graph: The DAG with initial node levels set.
         """
-        lst_level = []
         for i in range(dag.vcount()):
-            lst_vertices = dag.subcomponent(dag.vs[i], mode="in")
-            level = len(
-                [vtx for vtx in lst_vertices if dag.vs[vtx]["type"] == VertexType.MAPPING.name]
-            )
-            if dag.vs[i]["type"] == VertexType.ENTITY.name and level == 1:
-                level = 2
-            elif dag.vs[i]["type"] == VertexType.MAPPING.name and level > 1:
-                level += 1
-            elif dag.vs[i]["type"] == VertexType.ENTITY.name and level > 1:
-                level += 2
-            lst_level.append(level)
-        dag.vs["level"] = lst_level
+            dag.vs[i]["qty_predecessors"] = len(dag.subcomponent(dag.vs[i], mode="in"))
+
+        # Pak de nodes met 1 subcomponent
+        # Zet de level voor deze nodes op 0
+        # Pak de successors van deze nodes, zet die op level + 1
+        id_vertices = [(vtx, 0) for vtx in dag.vs.select(qty_predecessors_eq=1).indices]
+        qty_vertices = len(id_vertices)
+        while qty_vertices > 0:
+            id_vx, level = id_vertices.pop(0)
+            dag.vs[id_vx]["level"] = level
+            id_vertices.extend([(vtx, level + 1) for vtx in dag.neighbors(id_vx, mode="out")])
+            qty_vertices = len(id_vertices)
         return dag
 
     def _set_max_end_node_level(self, dag: ig.Graph) -> ig.Graph:
@@ -241,7 +241,9 @@ class DagETL(GraphRETWFiles):
         """
         # Set visual node properties
         for node in dag.vs:
-            node["shape"] = "database" if node["type"] == VertexType.ENTITY.name else "hexagon"
+            node["shape"] = (
+                "database" if node["type"] == VertexType.ENTITY.name else "hexagon"
+            )
             node["shadow"] = True
             self._set_node_color_pyvis(node)
             self._set_node_tooltip_pyvis(node)
@@ -342,7 +344,10 @@ def main():
     Processes a list of RETW files, adds them to a MappingDependencies object,
     and generates the mapping order and DAG visualization for each iteration of adding a file.
     """
-    lst_files_RETW = ["output/Usecase_Aangifte_Behandeling.json"]
+    lst_files_RETW = [
+        "output/Usecase_Aangifte_Behandeling(1).json",
+        "output/Usecase_Test_BOK.json",
+    ]
     file_mappings_png = "output/test_mappings.png"
     file_mappings_html = "output/test_mappings.html"
     dag_ETL = DagETL()
