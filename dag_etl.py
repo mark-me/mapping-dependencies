@@ -26,6 +26,34 @@ class DagETL(GraphRETWFiles):
             ObjectPosition.UNDETERMINED.name: "red",
         }
 
+    def add_RETW_files(self, files_RETW: list) -> bool:
+        """Process multiple RETW files.
+
+        Processes each RETW file in the input list, generates the mapping order,
+        and creates a DAG visualization.
+        Args:
+            files_RETW (list): list of RETW file containing mappings
+
+        Returns:
+            bool: Indicates whether all RETW file were processed
+        """
+        # Make sure added files are unique
+        files_RETW = list(set(files_RETW))
+
+        # Process files
+        for i, file_RETW in enumerate(files_RETW):
+            # Add file to parser
+            if self.add_RETW_file(file_RETW=file_RETW):
+                logger.info(f"Added RETW file '{file_RETW}'")
+                self.plot_dag(file_html=f"output/dag_structure_{i}.html")
+                dict_mapping_order = self.get_mapping_order()
+                with open(f"output/mapping_order_{i}.jsonl", "w", encoding="utf-8") as file:
+                    json.dump(dict_mapping_order, file, indent=4)
+            else:
+                logger.error(f"Failed to add RETW file '{file_RETW}'")
+                return False
+        return True
+
     def _build_dag_mappings(self) -> ig.Graph:
         vertices = list(self.mappings.values()) + list(self.entities.values())
         edge_types = [EdgeType.ENTITY_SOURCE.name, EdgeType.ENTITY_TARGET.name]
@@ -333,10 +361,7 @@ def main():
     file_mappings_order = "output/mapping_order.jsonl"
     dag_ETL = DagETL()
     dag_ETL.add_RETW_files(files_RETW=lst_files_RETW)
-    dag_ETL.plot_dag(file_html=file_mappings_html)
-    dict_mapping_order = dag_ETL.get_mapping_order()
-    with open(file_mappings_order, "w", encoding="utf-8") as file:
-        json.dump(dict_mapping_order, file, indent=4)
+
 
 
 if __name__ == "__main__":
