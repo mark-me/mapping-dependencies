@@ -189,13 +189,17 @@ class DagETL(GraphRETWFiles):
         return dag
 
     def _calculate_node_levels(self, dag: ig.Graph) -> ig.Graph:
-        """Calculate and set the initial level for each node in the DAG.
+    def _calculate_node_levels(self, dag: ig.Graph) -> ig.Graph:
+        """Calculate and assign a level to each node in the DAG.
+
+        Calculates the level of each node in the DAG based on its predecessors,
+        and adds a 'level' attribute to each vertex.
 
         Args:
             dag (ig.Graph): The DAG to process.
 
         Returns:
-            ig.Graph: The DAG with initial node levels set.
+            ig.Graph: The DAG with node levels calculated and set.
         """
         # Getting the number of preceding nodes to determine where to start
         for i in range(dag.vcount()):
