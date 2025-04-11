@@ -384,6 +384,10 @@ class GraphRETWFiles(GraphRETWBase):
         graph.delete_vertices(vx_delete)
         # Visualization
         graph = self._set_attributes_pyvis(graph=graph)
+        # Recolor requested entity
+        vx_model = graph.vs.select(CodeModel_eq=code_model)
+        vx_entity = vx_model.select(Code_eq=code_entity)
+        graph.vs[vx_entity.indices[0]]["color"] = "lightseagreen"
         self.plot_graph_html(graph=graph, file_html=file_html)
 
 
