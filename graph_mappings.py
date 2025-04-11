@@ -197,12 +197,12 @@ class DagETL(GraphRETWFiles):
         Returns:
             ig.Graph: The DAG with initial node levels set.
         """
+        # Getting the number of preceding nodes to determine where to start
         for i in range(dag.vcount()):
             dag.vs[i]["qty_predecessors"] = len(dag.subcomponent(dag.vs[i], mode="in"))
 
-        # Pak de nodes met 1 subcomponent
-        # Zet de level voor deze nodes op 0
-        # Pak de successors van deze nodes, zet die op level + 1
+        # Calculating levels
+        # FIXME: Iterates through nodes that have multiple incoming connections multiple times
         id_vertices = [(vtx, 0) for vtx in dag.vs.select(qty_predecessors_eq=1).indices]
         qty_vertices = len(id_vertices)
         while qty_vertices > 0:
