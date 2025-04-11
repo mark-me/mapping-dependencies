@@ -1,3 +1,4 @@
+import json
 from enum import Enum, auto
 
 import igraph as ig
@@ -64,6 +65,28 @@ class DagETL(GraphRETWFiles):
             lst_entity_position.append(position)
         dag.vs["position"] = lst_entity_position
         return dag
+
+    def get_mapping_order(self) -> list:
+        """Returns mappings and order of running (could be parallel,
+        in which case other sub-sorting should be implemented if needed)
+
+        Returns:
+            list: List of mappings with order
+        """
+        lst_mappings = []
+        dag = self._build_dag_mappings()
+        for node in dag.vs:
+            if node["type"] == VertexType.MAPPING.name:
+                dict_mapping = {key: node[key] for key in {key: node[key] for key in node.attribute_names()}}
+                dict_mapping["RunLevel"] = node["run_level"]
+                dict_mapping["RunLevelStage"] = node["run_level_stage"]
+                lst_mappings.append(dict_mapping)
+        # Sort the list of mappings by run level and the run level stage
+        lst_mappings = sorted(
+            lst_mappings,
+            key=lambda mapping: (mapping["RunLevel"], mapping["RunLevelStage"]),
+        )
+        return lst_mappings
 
     def _dag_mapping_run_order(self, dag: ig.Graph) -> ig.Graph:
         """Erich the DAG with the sequence the mappings should run in
@@ -307,9 +330,13 @@ def main():
         "output/Usecase_Test_BOK.json",
     ]
     file_mappings_html = "output/test_mappings.html"
+    file_mappings_order = "output/mapping_order.jsonl"
     dag_ETL = DagETL()
     dag_ETL.add_RETW_files(files_RETW=lst_files_RETW)
     dag_ETL.plot_dag(file_html=file_mappings_html)
+    dict_mapping_order = dag_ETL.get_mapping_order()
+    with open(file_mappings_order, "w", encoding="utf-8") as file:
+        json.dump(dict_mapping_order, file, indent=4)
 
 
 if __name__ == "__main__":
