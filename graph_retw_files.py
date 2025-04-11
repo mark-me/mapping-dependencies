@@ -28,7 +28,7 @@ class GraphRETWFiles(GraphRETWBase):
         self.edges = []
         self.graph = ig.Graph()
 
-    def add_RETW_files(self, files_RETW: list, generate_plot: bool = False) -> bool:
+    def add_RETW_files(self, files_RETW: list) -> bool:
         """Process multiple RETW files.
 
         Processes each RETW file in the input list, generates the mapping order,
