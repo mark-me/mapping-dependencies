@@ -25,31 +25,6 @@ RETW_File ||--o{ Mapping: "Created"
 RETW_File ||--o{ Entity: "Created"
 ```
 
-This translated to the following three types nodes with attributes
-
-* RETW file nodes
-  * File name
-  * Created time stamp
-  * Order added
-* Entity nodes
-  * Model
-  * Name
-  * Optional
-    * RETW file
-    * Created by
-    * Created time stamp
-    * Modified by
-    * Modified time stamp
-* Mapping nodes
-  * RETW file
-  * Power Designer Id
-  * Name
-  * Code
-  * Created by
-  * Created time stamp
-  * Modified by
-  * Modified time stamp
-
 ## Mapping order
 
 The ordering of mappings can be determined using ```mapping_order.py``` and changing the list with filenames in the ```main``` function's variable ```lst_files_RETW```. This script also checks whether the ETL flow is acyclic.
