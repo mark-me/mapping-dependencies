@@ -67,10 +67,27 @@ The asterisks in the filename indicates the iteration of each RETW file added to
 
 ## Document dependencies
 
-Since a whole ETL flow can be split across different Power Designer documents, there will also be multiple RETW files. Entities creates in one document can be used as a source for a mapping in another Power Designer document. You can query the files
-The function ```plot_entity_journey``` from the file ```graph_retw_files.py```, which is called in the same file's ```main``` function generates
+Since a whole ETL flow can be split across different Power Designer documents, there will also be multiple RETW files. Entities created in one document can be used as a source for a mapping in another Power Designer document.
 
-### Ouput document dependencies
+The python file ```graph_retw_files.py``` contains the functionalities to see what the file depencencies are and how entities 'travel' across different files.
+
+### File dependencies
+
+RETW files can be connected because an entity created in one file can be used in the mapping of another file. The function ```plot_graph_total``` of the class ```GraphRETWFiles```.
+
+### Entity journey
+
+The function ```plot_entity_journey``` of the class ```GraphRETWFiles``` creates a HTML file that shows all the files, entities and mappings that are related to the entity in question.
+
+An example of the function in action can be found in the main function where the model and entity is supplied:
+
+```py
+graph.plot_entity_journey(
+        code_model="Da_Central_CL",
+        code_entity="DmsProcedure",
+        file_html="output/entity_journey.html",
+    )
+```
 
 ## ETL job failures
 
@@ -107,6 +124,11 @@ In a Power Designer document (and the corresponding RETW file), all objects are 
 In this section I describe the classes, what they are used for and how they fit together.
 
 ```mermaid
+---
+  config:
+    class:
+      hideEmptyMembersBox: true
+---
 classDiagram
   GraphRETWBase <|-- GraphRETWFiles
   GraphRETWFiles <|-- DagETL
@@ -115,22 +137,28 @@ classDiagram
   GraphRETWBase *-- VertexType
 
   class VertexType{
+    <<enumeration>>
     ENTITY
     MAPPING
     FILE
     ERROR
   }
   class EdgeType{
+    <<enumeration>>
     FILE_ENTITY
     FILE_MAPPING
     ENTITY_SOURCE
     ENTITY_TARGET
+  }
+  class GraphRETWBase{
+    <<Abstract>>
   }
   class GraphRETWFiles{
     +add_RETW_files(list)
     +add_RETW_file(str)
     +plot_graph_total(str)
     +plot_graph_retw_file(str)
+    +plot_file_dependencies(str)
     +plot_entity_journey(str)
   }
   class DagETL{

@@ -455,12 +455,12 @@ def main():
     ]
     graph = GraphRETWFiles()
     graph.add_RETW_files(files_RETW=lst_files_RETW)
-    # graph.plot_graph_total(file_html="output/graph_files_total.html")
-    # graph.plot_entity_journey(
-    #     code_model="Da_Central_CL",
-    #     code_entity="DmsProcedure",
-    #     file_html="output/entity_journey.html",
-    # )
+    graph.plot_graph_total(file_html="output/graph_files_total.html")
+    graph.plot_entity_journey(
+        code_model="Da_Central_CL",
+        code_entity="DmsProcedure",
+        file_html="output/entity_journey.html",
+    )
     graph.plot_file_dependencies(file_html="output/file_dependencies.html")
 
 
