@@ -356,23 +356,46 @@ class GraphRETWFiles(GraphRETWBase):
         graph = self._set_attributes_pyvis(graph=graph)
         self.plot_graph_html(graph=graph, file_html=file_html)
 
-    def plot_file_dependencies(self, file_html: str) -> None:
-        graph = self._build_graph_total()
-        vx_files = graph.vs.select(type_eq=VertexType.FILE_RETW.name)
+    def _graph_file_dependencies(self) -> ig.Graph:
+        """Build a graph of file dependencies.
 
-        lst_vertices = [{"name": mapping["mapping"]} for mapping in vx_files]
-        lst_edges = []
-        for a in mapping_sources:
-            for b in mapping_sources:
-                if a["mapping"] < b["mapping"]:
-                    qty_common = len(set(a["sources"]) & set(b["sources"]))
+        Creates a graph where nodes represent RETW files and edges connect files that share common objects (entities or mappings).
+
+        Returns:
+            graph_files (ig.Graph): Graph representing the dependencies between the files.
+        """
+        graph = self._build_graph_total()
+        # Get files and their linked objects
+        vx_files = graph.vs.select(type_eq=VertexType.FILE_RETW.name)
+        lst_file_nodes = []
+        for vx_file in vx_files:
+            dict_file = (vx_file["name"], graph.subcomponent(vx_file, mode="out"))
+            lst_file_nodes.append(dict_file)
+
+        # Create file edges based on the objects they have in common
+        lst_file_edges = []
+        for a, file_a in enumerate(lst_file_nodes):
+            for b, file_b in enumerate(lst_file_nodes):
+                if a < b:
+                    qty_common = len(set(file_a[1]) & set(file_b[1]))
                     if qty_common > 0:
-                        lst_edges.append(
-                            {"source": a["mapping"], "target": b["mapping"]}
+                        lst_file_edges.append(
+                            (file_a[0], file_b[0])
                         )
-        graph_conflicts = ig.Graph.DictList(
-            vertices=lst_vertices, edges=lst_edges, directed=False
-        )
+        # Create graph of file dependencies
+        graph_files = ig.Graph()
+        for file_key, file_values in self.files_RETW.items():
+            vx_file = graph_files.add_vertex(file_key)
+            for k, v in file_values.items():
+                vx_file[k] = v
+        if lst_file_edges:
+            graph_files.add_edges(es=lst_file_edges)
+        return graph_files
+
+    def plot_file_dependencies(self, file_html: str) -> None:
+        graph_files = self._graph_file_dependencies()
+        graph_files = self._set_attributes_pyvis(graph=graph_files)
+        self.plot_graph_html(graph=graph_files, file_html=file_html)
 
     def plot_entity_journey(
         self, code_model: str, code_entity: str, file_html: str
@@ -421,13 +444,13 @@ def main():
     ]
     graph = GraphRETWFiles()
     graph.add_RETW_files(files_RETW=lst_files_RETW)
-    graph.plot_graph_total(file_html="output/graph_files_total.html")
-    graph.plot_entity_journey(
-        code_model="Da_Central_CL",
-        code_entity="DmsProcedure",
-        file_html="output/entity_journey.html",
-    )
-    #graph.plot_file_dependencies(file_html="output/file_dependencies.html")
+    # graph.plot_graph_total(file_html="output/graph_files_total.html")
+    # graph.plot_entity_journey(
+    #     code_model="Da_Central_CL",
+    #     code_entity="DmsProcedure",
+    #     file_html="output/entity_journey.html",
+    # )
+    graph.plot_file_dependencies(file_html="output/file_dependencies.html")
 
 
 if __name__ == "__main__":
