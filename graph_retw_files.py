@@ -45,9 +45,7 @@ class GraphRETWFiles(GraphRETWBase):
         # Process files
         for file_RETW in files_RETW:
             # Add file to parser
-            if self.add_RETW_file(file_RETW=file_RETW):
-                logger.info(f"Added RETW file '{file_RETW}'")
-            else:
+            if not self.add_RETW_file(file_RETW=file_RETW):
                 logger.error(f"Failed to add RETW file '{file_RETW}'")
                 return False
         return True
@@ -64,6 +62,7 @@ class GraphRETWFiles(GraphRETWBase):
         try:
             with open(file_RETW) as file:
                 dict_RETW = json.load(file)
+            logger.info(f"Added RETW file '{file_RETW}'")
         except FileNotFoundError:
             logger.error(f"Could not find file '{file_RETW}'")
             return False
@@ -83,7 +82,9 @@ class GraphRETWFiles(GraphRETWBase):
                 }
             }
         )
+        logger.info(f"Adding entities 'created' in the RETW file '{file_RETW}'")
         self._add_model_entities(id_file=id_file, dict_RETW=dict_RETW)
+        logger.info(f"Adding mappings from the RETW file '{file_RETW}'")
         self._add_mappings(id_file=id_file, mappings=dict_RETW["Mappings"])
         return True
 
@@ -94,7 +95,7 @@ class GraphRETWFiles(GraphRETWBase):
         Also adds edges between the file and its entities.
 
         Args:
-            file_RETW (str): Path to the RETW file.
+            id_file (int): id of the RETW file.
             dict_RETW (list): Dictionary containing RETW data.
 
         Returns:
@@ -142,7 +143,7 @@ class GraphRETWFiles(GraphRETWBase):
         source and target entities.
 
         Args:
-            file_RETW (str): Path to the RETW file.
+            id_file (int): id of the RETW file.
             mappings (dict): Dictionary containing mapping data.
 
         Returns:
@@ -190,6 +191,8 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             None
         """
+        if "SourceComposition" not in mapping or len(mapping["SourceComposition"]):
+            logger.error(f"No source entities for mapping '{mapping["Name"]}'")
         for source in mapping["SourceComposition"]:
             source_entity = source["Entity"]
             id_entity = hash(source_entity["CodeModel"] + source_entity["Code"])
@@ -224,6 +227,8 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             None
         """
+        if "EntityTarget" not in mapping:
+            logger.error(f"No target entity for mapping '{mapping["Name"]}'")
         target_entity = mapping["EntityTarget"]
         id_entity = hash(target_entity["CodeModel"] + target_entity["Code"])
         entity = {
@@ -253,6 +258,7 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             ig.Graph: The constructed graph.
         """
+        logger.info("Building a graph for RETW files, entities and mappings")
         vertices = (
             list(self.mappings.values())
             + list(self.entities.values())
@@ -275,6 +281,7 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             ig.Graph: The graph with attributes set for pyvis visualization.
         """
+        logger.info("Setting graphical attributes of the graph")
         for node in graph.vs:
             node["shape"] = self.pyvis_type_shape[node["type"]]
             node["shadow"] = True
@@ -329,6 +336,7 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             None
         """
+        logger.info(f"Create a network plot, '{file_html}', for files, entities and mappings")
         graph = self._build_graph_total()
         graph = self._set_attributes_pyvis(graph=graph)
         self.plot_graph_html(graph=graph, file_html=file_html)
@@ -347,6 +355,7 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             None
         """
+        logger.info(f"Creating a network plot, '{file_html}', for entities and mappings of a single RETW file")
         graph = self._build_graph_total()
         vx_file = graph.vs.select(FileRETW_eq=file_retw)
         vx_file_graph = graph.subcomponent(vx_file[0], mode="out")
@@ -364,6 +373,7 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             graph_files (ig.Graph): Graph representing the dependencies between the files.
         """
+        logger.info("Creating a graph for file dependencies.")
         graph = self._build_graph_total()
         # Get files and their linked objects
         vx_files = graph.vs.select(type_eq=VertexType.FILE_RETW.name)
@@ -404,6 +414,7 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             None
         """
+        logger.info(f"Creating a network plot, '{file_html}', showing RETW file dependencies")
         graph_files = self._graph_file_dependencies()
         graph_files = self._set_attributes_pyvis(graph=graph_files)
         self.plot_graph_html(graph=graph_files, file_html=file_html)
@@ -425,6 +436,7 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             None
         """
+        logger.info(f"Creating a network plot, '{file_html}', for all dependencies of entity '{code_model}.{code_entity}'.")
         graph = self._build_graph_total()
         # Extract graph for relevant entity
         vx_model = graph.vs.select(CodeModel_eq=code_model)
