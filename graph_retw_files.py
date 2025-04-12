@@ -393,6 +393,17 @@ class GraphRETWFiles(GraphRETWBase):
         return graph_files
 
     def plot_file_dependencies(self, file_html: str) -> None:
+        """Plot the dependencies between RETW files.
+
+        Generates and visualizes a graph showing dependencies between RETW files based on shared objects.
+        The visualization is saved to an HTML file.
+
+        Args:
+            file_html (str): Path to the output HTML file.
+
+        Returns:
+            None
+        """
         graph_files = self._graph_file_dependencies()
         graph_files = self._set_attributes_pyvis(graph=graph_files)
         self.plot_graph_html(graph=graph_files, file_html=file_html)
