@@ -24,6 +24,7 @@ class GraphRETWFiles(GraphRETWBase):
         super().__init__()
         self.files_RETW = {}
         self.entities = {}
+        self.attributes = {}
         self.mappings = {}
         self.edges = []
         self.graph = ig.Graph()
@@ -88,7 +89,7 @@ class GraphRETWFiles(GraphRETWBase):
         self._add_mappings(id_file=id_file, mappings=dict_RETW["Mappings"])
         return True
 
-    def _add_model_entities(self, id_file: int, dict_RETW: list) -> None:
+    def _add_model_entities(self, id_file: int, dict_RETW: dict) -> None:
         """Add model entities to the graph.
 
         Extracts entities from the document model in the RETW dictionary and adds them as nodes to the graph.
@@ -96,7 +97,7 @@ class GraphRETWFiles(GraphRETWBase):
 
         Args:
             id_file (int): id of the RETW file.
-            dict_RETW (list): Dictionary containing RETW data.
+            dict_RETW (dict): Dictionary containing RETW data.
 
         Returns:
             None
@@ -132,6 +133,19 @@ class GraphRETWFiles(GraphRETWBase):
                 "Creator": entity["Creator"],
                 "ModificationDate": entity["ModificationDate"],
                 "Modifier": entity["Modifier"],
+            }
+            self.edges.append(edge_entity_file)
+            self._add_entity_attributes(id_entity=id_entity, attributes=entity["Attributes"])
+
+    def _add_entity_attributes(self, id_entity: int, attributes: list) -> None:
+        for attr in attributes:
+            id_attribute = hash(str(id_entity) + attr["Code"])
+            attr.update({"type": VertexType.ATTRIBUTE.name})
+            self.attributes.update({id_attribute:attr})
+            edge_entity_file = {
+                "source": id_entity,
+                "target": id_attribute,
+                "type": EdgeType.ENTITY_ATTRIBUTE.name
             }
             self.edges.append(edge_entity_file)
 
@@ -283,6 +297,8 @@ class GraphRETWFiles(GraphRETWBase):
         """
         logger.info("Setting graphical attributes of the graph")
         for node in graph.vs:
+            test = node.attribute_names()
+            test_2 = node["type"]
             node["shape"] = self.pyvis_type_shape[node["type"]]
             node["shadow"] = True
             node["color"] = self.node_type_color[node["type"]]

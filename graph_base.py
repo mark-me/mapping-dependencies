@@ -18,6 +18,7 @@ class VertexType(Enum):
     ENTITY = auto()
     MAPPING = auto()
     FILE_RETW = auto()
+    ATTRIBUTE = auto()
     ERROR = auto()
 
 
@@ -31,23 +32,29 @@ class EdgeType(Enum):
     FILE_MAPPING = auto()
     ENTITY_SOURCE = auto()
     ENTITY_TARGET = auto()
+    ENTITY_ATTRIBUTE = auto()
+    ATTRIBUTE_SOURCE = auto()
+    ATTRIBUTE_TARGET = auto()
 
 class GraphRETWBase:
     def __init__(self):
         self.igraph_type_shape = {
             VertexType.ENTITY.name: "square",
+            VertexType.ATTRIBUTE.name: "star",
             VertexType.FILE_RETW.name: "triangle",
             VertexType.MAPPING.name: "circle",
             VertexType.ERROR.name: "triangle-down",
         }
         self.pyvis_type_shape = {
             VertexType.ENTITY.name: "database",
+            VertexType.ATTRIBUTE.name: "diamond",
             VertexType.FILE_RETW.name: "square",
             VertexType.MAPPING.name: "hexagon",
             VertexType.ERROR.name: "star",
         }
         self.node_type_color = {
             VertexType.ENTITY.name: "gold",
+            VertexType.ATTRIBUTE.name: "slategray",
             VertexType.FILE_RETW.name: "silver",
             VertexType.MAPPING.name: "slateblue",
             VertexType.ERROR.name: "red",
