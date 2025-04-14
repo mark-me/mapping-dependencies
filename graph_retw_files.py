@@ -191,7 +191,10 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             None
         """
-        if "SourceComposition" not in mapping or len(mapping["SourceComposition"]):
+        has_source_compositions = "SourceComposition" in mapping
+        if has_source_compositions:
+            has_source_compositions = len(mapping["SourceComposition"]) > 0
+        if not has_source_compositions:
             logger.error(f"No source entities for mapping '{mapping["Name"]}'")
         for source in mapping["SourceComposition"]:
             source_entity = source["Entity"]
@@ -341,7 +344,6 @@ class GraphRETWFiles(GraphRETWBase):
         graph = self._set_attributes_pyvis(graph=graph)
         self.plot_graph_html(graph=graph, file_html=file_html)
 
-
     def plot_graph_retw_file(self, file_retw: str, file_html: str) -> None:
         """Plot the graph for a specific RETW file.
 
@@ -453,28 +455,3 @@ class GraphRETWFiles(GraphRETWBase):
         vx_entity = vx_model.select(Code_eq=code_entity)
         graph.vs[vx_entity.indices[0]]["color"] = "lightseagreen"
         self.plot_graph_html(graph=graph, file_html=file_html)
-
-
-def main():
-    """Main function to process RETW files and generate mapping order and DAG visualizations.
-
-    Processes a list of RETW files, adds them to a MappingDependencies object,
-    and generates the mapping order and DAG visualization for each iteration of adding a file.
-    """
-    lst_files_RETW = [
-        "output/Usecase_Aangifte_Behandeling(1).json",
-        "output/Usecase_Test_BOK.json",
-    ]
-    graph = GraphRETWFiles()
-    graph.add_RETW_files(files_RETW=lst_files_RETW)
-    graph.plot_graph_total(file_html="output/graph_files_total.html")
-    graph.plot_entity_journey(
-        code_model="Da_Central_CL",
-        code_entity="DmsProcedure",
-        file_html="output/entity_journey.html",
-    )
-    graph.plot_file_dependencies(file_html="output/file_dependencies.html")
-
-
-if __name__ == "__main__":
-    main()

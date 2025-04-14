@@ -1,14 +1,12 @@
-import json
-
 import igraph as ig
 
 from log_config import logging
-from dag_etl import DagETL, VertexType
+from dag_etl import EtlDag, VertexType
 
 logger = logging.getLogger(__name__)
 
 
-class ETLFailureSimulator(DagETL):
+class ETLFailureSimulator(EtlDag):
     def __init__(self):
         """Initialize the MappingSimulator.
 
@@ -99,27 +97,3 @@ class ETLFailureSimulator(DagETL):
         self._set_attributes_pyvis(dag=self.dag)
         self._derive_affected()
         self.plot_graph_html(graph=self.dag, file_html=file_html)
-
-
-def main():
-    lst_files_RETW = [
-        "output/Usecase_Aangifte_Behandeling(1).json",
-        "output/Usecase_Test_BOK.json",
-    ]
-    lst_id_entities_failed = ["o71", "o207"]
-
-    etl_simulator = ETLFailureSimulator()
-    # Adding RETW files to generate complete ETL DAG
-    etl_simulator.add_RETW_files(files_RETW=lst_files_RETW)
-    # Set failed node
-    etl_simulator.set_entities_failed(lst_id_entities_failed)
-    # Create fallout report file
-    dict_fallout = etl_simulator.get_report_fallout()
-    with open("output/dag_run_fallout.json", "w", encoding="utf-8") as file:
-        json.dump(dict_fallout, file, indent=4)
-    # Create fallout visualization
-    etl_simulator.plot_dag_fallout(file_html="output/dag_run_report.html")
-
-
-if __name__ == "__main__":
-    main()

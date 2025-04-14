@@ -1,10 +1,11 @@
+import os
 from enum import Enum, auto
+from pathlib import Path
 
 import igraph as ig
 import networkx as nx
-from pyvis.network import Network
-
 from log_config import logging
+from pyvis.network import Network
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,9 @@ class GraphRETWBase:
             VertexType.ERROR.name: "red",
         }
 
+    def create_output_dir(self, file_path: str) -> None:
+        parent_directory = os.path.dirname(file_path)
+        Path(parent_directory).mkdir(parents=True, exist_ok=True)
 
     def igraph_to_networkx(self, graph: ig.Graph) -> nx.DiGraph:
         """Converts an igraph into a networkx graph
@@ -84,6 +88,7 @@ class GraphRETWBase:
             dag (nx.DiGraph): Networkx DAG
             file_html_out (str): file path that the result should be written to
         """
+        self.create_output_dir(file_path=file_html)
         net = Network("900px", "1917px", directed=True, layout=True)
         graph = self.igraph_to_networkx(graph=graph)
         net.from_nx(graph)

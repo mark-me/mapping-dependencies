@@ -16,7 +16,7 @@ class ObjectPosition(Enum):
     UNDETERMINED = auto()
 
 
-class DagETL(GraphRETWFiles):
+class EtlDag(GraphRETWFiles):
     def __init__(self):
         super().__init__()
         self.node_position_color = {
@@ -45,7 +45,7 @@ class DagETL(GraphRETWFiles):
             # Add file to parser
             if self.add_RETW_file(file_RETW=file_RETW):
                 logger.info(f"Added RETW file '{file_RETW}'")
-                self.plot_dag(file_html=f"output/dag_structure_{i}.html")
+                self.plot_etl_dag(file_html=f"output/dag_structure_{i}.html")
                 dict_mapping_order = self.get_mapping_order()
                 with open(f"output/mapping_order_{i}.jsonl", "w", encoding="utf-8") as file:
                     json.dump(dict_mapping_order, file, indent=4)
@@ -336,7 +336,7 @@ class DagETL(GraphRETWFiles):
                 + f"Model: {node["CodeModel"]}"
             )
 
-    def plot_dag(self, file_html: str) -> None:
+    def plot_etl_dag(self, file_html: str) -> None:
         """Create a html file with a graphical representation of a networkx graph
 
         Args:
@@ -345,24 +345,3 @@ class DagETL(GraphRETWFiles):
         dag = self._build_dag_mappings()
         dag = self._set_attributes_pyvis(dag=dag)
         self.plot_graph_html(graph=dag, file_html=file_html)
-
-
-def main():
-    """Main function to process RETW files and generate mapping order and DAG visualizations.
-
-    Processes a list of RETW files, adds them to a MappingDependencies object,
-    and generates the mapping order and DAG visualization for each iteration of adding a file.
-    """
-    lst_files_RETW = [
-        "output/Usecase_Aangifte_Behandeling(1).json",
-        "output/Usecase_Test_BOK.json",
-    ]
-    file_mappings_html = "output/test_mappings.html"
-    file_mappings_order = "output/mapping_order.jsonl"
-    dag_ETL = DagETL()
-    dag_ETL.add_RETW_files(files_RETW=lst_files_RETW)
-
-
-
-if __name__ == "__main__":
-    main()
