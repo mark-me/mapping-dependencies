@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from pathlib import Path
 
 import igraph as ig
@@ -77,15 +78,22 @@ class GraphRETWFiles(GraphRETWBase):
                     "type": VertexType.FILE_RETW.name,
                     "Order": order_added,
                     "FileRETW": file_RETW,
-                    "TimeCreated": Path(file_RETW).stat().st_ctime,
-                    "TimeModified": Path(file_RETW).stat().st_mtime,
+                    "TimeCreated": datetime.fromtimestamp(
+                        Path(file_RETW).stat().st_ctime
+                    ).strftime("%Y-%m-%d %H:%M:%S"),
+                    "TimeModified": datetime.fromtimestamp(
+                        Path(file_RETW).stat().st_mtime
+                    ).strftime("%Y-%m-%d %H:%M:%S"),
                 }
             }
         )
         logger.info(f"Adding entities 'created' in the RETW file '{file_RETW}'")
         self._add_model_entities(id_file=id_file, dict_RETW=dict_RETW)
-        logger.info(f"Adding mappings from the RETW file '{file_RETW}'")
-        self._add_mappings(id_file=id_file, mappings=dict_RETW["Mappings"])
+        if "Mappings" in dict_RETW:
+            logger.info(f"Adding mappings from the RETW file '{file_RETW}'")
+            self._add_mappings(id_file=id_file, mappings=dict_RETW["Mappings"])
+        else:
+            logger.warning(f"No mappings from the RETW file '{file_RETW}'")
         return True
 
     def _add_model_entities(self, id_file: int, dict_RETW: list) -> None:
@@ -195,7 +203,7 @@ class GraphRETWFiles(GraphRETWBase):
         if has_source_compositions:
             has_source_compositions = len(mapping["SourceComposition"]) > 0
         if not has_source_compositions:
-            logger.error(f"No source entities for mapping '{mapping["Name"]}'")
+            logger.error(f"No source entities for mapping '{mapping['Name']}'")
         for source in mapping["SourceComposition"]:
             source_entity = source["Entity"]
             id_entity = hash(source_entity["CodeModel"] + source_entity["Code"])
@@ -231,7 +239,7 @@ class GraphRETWFiles(GraphRETWBase):
             None
         """
         if "EntityTarget" not in mapping:
-            logger.error(f"No target entity for mapping '{mapping["Name"]}'")
+            logger.error(f"No target entity for mapping '{mapping['Name']}'")
         target_entity = mapping["EntityTarget"]
         id_entity = hash(target_entity["CodeModel"] + target_entity["Code"])
         entity = {
@@ -339,7 +347,9 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             None
         """
-        logger.info(f"Create a network plot, '{file_html}', for files, entities and mappings")
+        logger.info(
+            f"Create a network plot, '{file_html}', for files, entities and mappings"
+        )
         graph = self._build_graph_total()
         graph = self._set_attributes_pyvis(graph=graph)
         self.plot_graph_html(graph=graph, file_html=file_html)
@@ -357,7 +367,9 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             None
         """
-        logger.info(f"Creating a network plot, '{file_html}', for entities and mappings of a single RETW file")
+        logger.info(
+            f"Creating a network plot, '{file_html}', for entities and mappings of a single RETW file"
+        )
         graph = self._build_graph_total()
         vx_file = graph.vs.select(FileRETW_eq=file_retw)
         vx_file_graph = graph.subcomponent(vx_file[0], mode="out")
@@ -375,6 +387,7 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             graph_files (ig.Graph): Graph representing the dependencies between the files.
         """
+        # TODO: make edges based in incoming and outgoing dependencies
         logger.info("Creating a graph for file dependencies.")
         graph = self._build_graph_total()
         # Get files and their linked objects
@@ -391,15 +404,14 @@ class GraphRETWFiles(GraphRETWBase):
                 if a < b:
                     qty_common = len(set(file_a[1]) & set(file_b[1]))
                     if qty_common > 0:
-                        lst_file_edges.append(
-                            (file_a[0], file_b[0])
-                        )
+                        lst_file_edges.append((a, b))
         # Create graph of file dependencies
         graph_files = ig.Graph()
-        for file_key, file_values in self.files_RETW.items():
-            vx_file = graph_files.add_vertex(file_key)
+        for i, (file_key, file_values) in enumerate(self.files_RETW.items()):
+            vx_file = graph_files.add_vertex(i)
             for k, v in file_values.items():
-                vx_file[k] = v
+                if k != "name":
+                    vx_file[k] = v
         if lst_file_edges:
             graph_files.add_edges(es=lst_file_edges)
         return graph_files
@@ -416,7 +428,9 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             None
         """
-        logger.info(f"Creating a network plot, '{file_html}', showing RETW file dependencies")
+        logger.info(
+            f"Creating a network plot, '{file_html}', showing RETW file dependencies"
+        )
         graph_files = self._graph_file_dependencies()
         graph_files = self._set_attributes_pyvis(graph=graph_files)
         self.plot_graph_html(graph=graph_files, file_html=file_html)
@@ -438,7 +452,9 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             None
         """
-        logger.info(f"Creating a network plot, '{file_html}', for all dependencies of entity '{code_model}.{code_entity}'.")
+        logger.info(
+            f"Creating a network plot, '{file_html}', for all dependencies of entity '{code_model}.{code_entity}'."
+        )
         graph = self._build_graph_total()
         # Extract graph for relevant entity
         vx_model = graph.vs.select(CodeModel_eq=code_model)
