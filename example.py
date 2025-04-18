@@ -61,4 +61,4 @@ if __name__ == "__main__":
     with open("output/dag_run_fallout.json", "w", encoding="utf-8") as file:
         json.dump(dict_mapping_order, file, indent=4)
     # Create fallout visualization
-    etl_simulator.plot_dag_fallout(file_html="etl_templates/output/dag_run_report.html")
+    etl_simulator.plot_dag_fallout(file_html="output/dag_run_report.html")
