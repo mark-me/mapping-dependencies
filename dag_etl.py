@@ -69,24 +69,15 @@ class EtlDag(GraphRETWFiles):
         dag = self._dag_node_position_category(dag=dag)
         dag = self._calculate_node_levels(dag=dag)
         dag = self._dag_mapping_run_order(dag=dag)
+        dag = self._dag_node_hierarchy_level(dag=dag)
 
         # FIXME: Delete entities without mappings
         vtxs_no_connections = []
-        # for vtx in dag.vs:
-        #     test = vtx["position"]
-        #     if test == ObjectPosition.UNDETERMINED.name:
-        #         vtxs_no_connections.append(vtx.index)
-        #     pass
         vtxs_no_connections.extend(
             vtx.index
             for vtx in dag.vs
             if vtx["qty_in"] == 0 and vtx["qty_out"] == 0
         )
-        # vtxs_no_connections = []
-        # for vtx in dag.vs:
-        #     neighbors = dag.neighbors(vtx, mode="all")
-        #     if len(neighbors) == 0:
-        #         vtxs_no_connections.append(vtx.index)
 
         if vtxs_no_connections:
             dag.delete_vertices(vtxs_no_connections)
