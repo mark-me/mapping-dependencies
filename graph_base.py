@@ -9,6 +9,19 @@ from pyvis.network import Network
 
 logger = logging.getLogger(__name__)
 
+lst_colors = [
+    "#ff595e",
+    "#ff924c",
+    "#ffca3a",
+    "#c5ca30",
+    "#8ac926",
+    "#52a675",
+    "#1982c4",
+    "#4267ac",
+    "#6a4c93",
+    "#b5a6c9",
+]
+
 
 class VertexType(Enum):
     """Enumerates the types of vertices in the graph.
@@ -32,6 +45,7 @@ class EdgeType(Enum):
     FILE_MAPPING = auto()
     ENTITY_SOURCE = auto()
     ENTITY_TARGET = auto()
+
 
 class GraphRETWBase:
     def __init__(self):
