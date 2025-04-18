@@ -1,7 +1,7 @@
 import igraph as ig
 
 from log_config import logging
-from dag_etl import EtlDag, VertexType
+from dag_etl import EtlDag, VertexType, NoFlowError
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,11 @@ class ETLFailureSimulator(EtlDag):
         Returns:
             nx.DiGraph: A networkx graph with the failure and it's consequences.
         """
-        self.dag = self._build_dag_mappings()
+        try:
+            self.dag = self._build_dag_mappings()
+        except NoFlowError:
+            logger.error("There are no mappings, so there is no ETL flow to plot!")
+            return
         for node_id in node_ids:
             self.nodes_failed.append(self.dag.vs.find(Id=node_id).index)
         self._derive_affected()
