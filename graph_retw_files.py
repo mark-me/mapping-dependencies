@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 import igraph as ig
+from igraph.operators.functions import intersection
 
 from graph_base import EdgeType, GraphRETWBase, VertexType
 from log_config import logging
@@ -280,6 +281,92 @@ class GraphRETWFiles(GraphRETWBase):
         logger.info("Build graph total")
         return graph
 
+    def _build_graph_retw_file(self, file_retw: str) -> ig.Graph:
+        """Build a subgraph for a specific RETW file.
+
+        Builds the total graph and extracts the subgraph related to a specific RETW file.
+
+        Args:
+            file_retw (str): The name of the RETW file.
+
+        Returns:
+            ig.Graph: The subgraph for the specified RETW file.
+        """
+
+        logger.info(f"Creating a graph for the file, '{file_retw}'")
+        graph = self._build_graph_total()
+        vx_file = graph.vs.select(FileRETW_eq=file_retw)
+        vx_file_graph = graph.subcomponent(vx_file[0], mode="out")
+        vx_delete = [i for i in graph.vs.indices if i not in vx_file_graph]
+        graph.delete_vertices(vx_delete)
+        return graph
+
+    def _get_file_dependencies_for_mapping(
+        self, graph: ig.Graph, vx_mapping: int, vx_file_index: int
+    ) -> list:
+        """Get file dependencies for a specific mapping.
+
+        Helper function to extract file dependencies for a given mapping.
+
+        Args:
+            graph (ig.Graph): The graph to analyze.
+            vx_mapping (int): The index of the mapping vertex.
+            vx_file_index (int): The index of the current file vertex.
+
+        Returns:
+            list: A list of tuples representing file dependencies (source_file, target_file).
+        """
+        vs_predecessors = graph.neighborhood(vx_mapping, mode="in", order=2)
+        vs_preceeding_files = [
+            vs.index
+            for vs in graph.vs.select(vs_predecessors)
+            if vs["type"] == VertexType.FILE_RETW.name
+        ]
+        vs_preceeding_files.remove(vx_file_index)
+        vs_preceeding_files = [
+            (vs["name"], graph.vs[vx_file_index]["name"])
+            for vs in graph.vs.select(vs_preceeding_files)
+        ]
+        return vs_preceeding_files
+
+    def _build_graph_file_dependencies(self) -> ig.Graph:
+        """Build a graph of dependencies between RETW files.
+
+        Constructs a graph where nodes represent RETW files and edges represent dependencies
+        based on shared entities in mappings. Dependencies are determined by analyzing the source
+        and target entities of mappings within each file.
+
+        Returns:
+            ig.Graph: The graph representing file dependencies.
+        """
+        graph = self._build_graph_total()
+        vs_files = graph.vs.select(type_eq=VertexType.FILE_RETW.name)
+        lst_edges_files = []
+        for vx_file in vs_files:
+            # Get mappings created in the file
+            vs_objects = graph.successors(vx_file)
+            vs_mappings = [
+                vs.index
+                for vs in graph.vs.select(vs_objects)
+                if vs["type"] == VertexType.MAPPING.name
+            ]
+            # For each of the mappings
+            for vx_mapping in vs_mappings:
+                edges_file = self._get_file_dependencies_for_mapping(
+                    graph, vx_mapping, vx_file.index
+                )
+                lst_edges_files.extend(edges_file)
+        # Make unique edges between files
+        lst_edges_files = [
+            {"source": file_from, "target": file_to}
+            for file_from, file_to in list(set(lst_edges_files))
+        ]
+        lst_files = list(self.files_RETW.values())
+        graph = ig.Graph.DictList(
+            vertices=lst_files, edges=lst_edges_files, directed=True
+        )
+        return graph
+
     def _set_attributes_pyvis(self, graph: ig.Graph) -> ig.Graph:
         """Set attributes for pyvis visualization.
 
@@ -370,51 +457,9 @@ class GraphRETWFiles(GraphRETWBase):
         logger.info(
             f"Creating a network plot, '{file_html}', for entities and mappings of a single RETW file"
         )
-        graph = self._build_graph_total()
-        vx_file = graph.vs.select(FileRETW_eq=file_retw)
-        vx_file_graph = graph.subcomponent(vx_file[0], mode="out")
-        vx_delete = [i for i in graph.vs.indices if i not in vx_file_graph]
-        graph.delete_vertices(vx_delete)
-        # Visualization
+        graph = self._build_graph_retw_file(file_retw=file_retw)
         graph = self._set_attributes_pyvis(graph=graph)
         self.plot_graph_html(graph=graph, file_html=file_html)
-
-    def _graph_file_dependencies(self) -> ig.Graph:
-        """Build a graph of file dependencies.
-
-        Creates a graph where nodes represent RETW files and edges connect files that share common objects (entities or mappings).
-
-        Returns:
-            graph_files (ig.Graph): Graph representing the dependencies between the files.
-        """
-        # TODO: make edges based in incoming and outgoing dependencies
-        logger.info("Creating a graph for file dependencies.")
-        graph = self._build_graph_total()
-        # Get files and their linked objects
-        vx_files = graph.vs.select(type_eq=VertexType.FILE_RETW.name)
-        lst_file_nodes = []
-        for vx_file in vx_files:
-            dict_file = (vx_file["name"], graph.subcomponent(vx_file, mode="out"))
-            lst_file_nodes.append(dict_file)
-
-        # Create file edges based on the objects they have in common
-        lst_file_edges = []
-        for a, file_a in enumerate(lst_file_nodes):
-            for b, file_b in enumerate(lst_file_nodes):
-                if a < b:
-                    qty_common = len(set(file_a[1]) & set(file_b[1]))
-                    if qty_common > 0:
-                        lst_file_edges.append((a, b))
-        # Create graph of file dependencies
-        graph_files = ig.Graph()
-        for i, (file_key, file_values) in enumerate(self.files_RETW.items()):
-            vx_file = graph_files.add_vertex(i)
-            for k, v in file_values.items():
-                if k != "name":
-                    vx_file[k] = v
-        if lst_file_edges:
-            graph_files.add_edges(es=lst_file_edges)
-        return graph_files
 
     def plot_file_dependencies(self, file_html: str) -> None:
         """Plot the dependencies between RETW files.
@@ -431,7 +476,7 @@ class GraphRETWFiles(GraphRETWBase):
         logger.info(
             f"Creating a network plot, '{file_html}', showing RETW file dependencies"
         )
-        graph_files = self._graph_file_dependencies()
+        graph_files = self._build_graph_file_dependencies()
         graph_files = self._set_attributes_pyvis(graph=graph_files)
         self.plot_graph_html(graph=graph_files, file_html=file_html)
 
