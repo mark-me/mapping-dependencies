@@ -9,6 +9,9 @@ from log_config import logging
 logger = logging.getLogger(__name__)
 
 
+class NoFlowError(Exception):
+    pass
+
 class ObjectPosition(Enum):
     START = auto()
     INTERMEDIATE = auto()
@@ -26,13 +29,14 @@ class EtlDag(GraphRETWFiles):
             ObjectPosition.UNDETERMINED.name: "red",
         }
 
-    def add_RETW_files(self, files_RETW: list) -> bool:
+    def add_RETW_files(self, files_RETW: list, plot_intermediate: bool = False) -> bool:
         """Process multiple RETW files.
 
         Processes each RETW file in the input list, generates the mapping order,
         and creates a DAG visualization.
         Args:
             files_RETW (list): list of RETW file containing mappings
+            plot_intermediate (list): Plot graph after each added file
 
         Returns:
             bool: Indicates whether all RETW file were processed
@@ -45,9 +49,12 @@ class EtlDag(GraphRETWFiles):
             # Add file to parser
             if self.add_RETW_file(file_RETW=file_RETW):
                 logger.info(f"Added RETW file '{file_RETW}'")
-                self.plot_etl_dag(file_html=f"output/dag_structure_{i}.html")
+                if plot_intermediate:
+                    self.plot_etl_dag(file_html=f"output/dag_structure_{i}.html")
                 dict_mapping_order = self.get_mapping_order()
-                with open(f"output/mapping_order_{i}.jsonl", "w", encoding="utf-8") as file:
+                with open(
+                    f"output/mapping_order_{i}.jsonl", "w", encoding="utf-8"
+                ) as file:
                     json.dump(dict_mapping_order, file, indent=4)
             else:
                 logger.error(f"Failed to add RETW file '{file_RETW}'")
@@ -62,7 +69,29 @@ class EtlDag(GraphRETWFiles):
         dag = self._dag_node_position_category(dag=dag)
         dag = self._calculate_node_levels(dag=dag)
         dag = self._dag_mapping_run_order(dag=dag)
-        dag = self._dag_node_hierarchy_level(dag=dag)
+
+        # FIXME: Delete entities without mappings
+        vtxs_no_connections = []
+        # for vtx in dag.vs:
+        #     test = vtx["position"]
+        #     if test == ObjectPosition.UNDETERMINED.name:
+        #         vtxs_no_connections.append(vtx.index)
+        #     pass
+        vtxs_no_connections.extend(
+            vtx.index
+            for vtx in dag.vs
+            if vtx["qty_in"] == 0 and vtx["qty_out"] == 0
+        )
+        # vtxs_no_connections = []
+        # for vtx in dag.vs:
+        #     neighbors = dag.neighbors(vtx, mode="all")
+        #     if len(neighbors) == 0:
+        #         vtxs_no_connections.append(vtx.index)
+
+        if vtxs_no_connections:
+            dag.delete_vertices(vtxs_no_connections)
+            if dag is None:
+                raise NoFlowError("No mappings, so no ETL flow")
         logger.info("Build graph mappings")
         return dag
 
@@ -102,10 +131,17 @@ class EtlDag(GraphRETWFiles):
             list: List of mappings with order
         """
         lst_mappings = []
-        dag = self._build_dag_mappings()
+        try:
+            dag = self._build_dag_mappings()
+        except NoFlowError:
+            logger.error("There are no mappings, so there is no ETL flow to plot!")
+            return
         for node in dag.vs:
             if node["type"] == VertexType.MAPPING.name:
-                dict_mapping = {key: node[key] for key in {key: node[key] for key in node.attribute_names()}}
+                dict_mapping = {
+                    key: node[key]
+                    for key in {key: node[key] for key in node.attribute_names()}
+                }
                 dict_mapping["RunLevel"] = node["run_level"]
                 dict_mapping["RunLevelStage"] = node["run_level_stage"]
                 lst_mappings.append(dict_mapping)
@@ -238,7 +274,9 @@ class EtlDag(GraphRETWFiles):
         while qty_vertices > 0:
             id_vx, level = id_vertices.pop(0)
             dag.vs[id_vx]["level"] = level
-            id_vertices.extend([(vtx, level + 1) for vtx in dag.neighbors(id_vx, mode="out")])
+            id_vertices.extend(
+                [(vtx, level + 1) for vtx in dag.neighbors(id_vx, mode="out")]
+            )
             qty_vertices = len(id_vertices)
         return dag
 
@@ -251,13 +289,14 @@ class EtlDag(GraphRETWFiles):
         Returns:
             ig.Graph: The DAG with end node levels adjusted.
         """
-        level_max = max(
+        end_levels = [
             dag.vs[vtx]["level"]
             for vtx in range(
                 dag.vcount()
             )  # Iterate over all vertices to find the true max level.
             if dag.vs[vtx]["position"] == ObjectPosition.END.name
-        )
+        ]
+        level_max = max(end_levels, default=0)
         for i in range(dag.vcount()):
             if dag.vs[i]["position"] == ObjectPosition.END.name:
                 dag.vs[i]["level"] = level_max
@@ -331,10 +370,7 @@ class EtlDag(GraphRETWFiles):
                 """
             )
         else:
-            node["title"] = (
-                node["title"]
-                + f"Model: {node["CodeModel"]}"
-            )
+            node["title"] = node["title"] + f"Model: {node['CodeModel']}"
 
     def plot_etl_dag(self, file_html: str) -> None:
         """Create a html file with a graphical representation of a networkx graph
@@ -342,6 +378,10 @@ class EtlDag(GraphRETWFiles):
         Args:
             file_html_out (str): file path that the result should be written to
         """
-        dag = self._build_dag_mappings()
+        try:
+            dag = self._build_dag_mappings()
+        except NoFlowError:
+            logger.error("There are no mappings, so there is no ETL flow to plot!")
+            return
         dag = self._set_attributes_pyvis(dag=dag)
         self.plot_graph_html(graph=dag, file_html=file_html)
