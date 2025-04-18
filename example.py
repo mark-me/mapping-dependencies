@@ -9,8 +9,10 @@ if __name__ == "__main__":
     """
     # List of RETW files to process, order of the list items is irrelevant
     lst_files_RETW = [
-        "output/Usecase_Aangifte_Behandeling(1).json",
+        "output/Usecase_Aangifte_Behandeling.json",
         "output/Usecase_Test_BOK.json",
+        "output/DMS_LDM_AZURE_SL.json",
+
     ]
 
     """File dependencies
