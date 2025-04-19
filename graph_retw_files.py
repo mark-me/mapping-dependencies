@@ -315,13 +315,17 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             list: A list of tuples representing file dependencies (source_file, target_file).
         """
+        # Always look two nodes back, to see if a source entity is created in another file
         vs_predecessors = graph.neighborhood(vx_mapping, mode="in", order=2)
+        # Only keep file nodes
         vs_preceeding_files = [
             vs.index
             for vs in graph.vs.select(vs_predecessors)
             if vs["type"] == VertexType.FILE_RETW.name
         ]
+        # Remove file that is being looked into
         vs_preceeding_files.remove(vx_file_index)
+        # Get file node id's of the dependencies
         vs_preceeding_files = [
             (vs["name"], graph.vs[vx_file_index]["name"])
             for vs in graph.vs.select(vs_preceeding_files)
