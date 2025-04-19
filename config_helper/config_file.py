@@ -22,10 +22,13 @@ class ConfigFile:
         """
         self._file = Path(file_config)
         self._data = {}
-        self._level_names = ["DEBUG", "INFO", "WARNING", "ERROR"]
+        self._dir_pd_documents = ""
+        self._dir_retw_output = ""
+        self._dir_repository = ""
+
         colors = ["grey62", "steel_blue3", "dark_orange", "red"]
         self._defaults = {
-            "level_colors": dict(zip(self._level_names, colors)),
+            "level_colors": dict(zip(self._dir_pd_documents, colors)),
             "export":{
                 "level_excludes": ["DEBUG", "INFO"],
                 "col_excludes": [],
@@ -87,7 +90,7 @@ class ConfigFile:
                 self._data[setting] = self._defaults[setting]
             else:
                 self._data[section][setting] = self._defaults[setting]
-        elif any(level not in self._data[setting] for level in self._level_names):
+        elif any(level not in self._data[setting] for level in self._dir_pd_documents):
             levels_missing = [
                 level
                 for level in self._defaults[setting].keys()
@@ -172,7 +175,7 @@ class ConfigFile:
     @level_colors.setter
     def level_colors(self, value: dict) -> None:
         if isinstance(value, dict):
-            if all(level in value for level in self._level_names):
+            if all(level in value for level in self._dir_pd_documents):
                 self._data["level_colors"] = value
             else:
                 self._data["level_colors"] = self._defaults["level_colors"]
