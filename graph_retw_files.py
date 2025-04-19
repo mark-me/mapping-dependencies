@@ -384,10 +384,6 @@ class GraphRETWFiles(GraphRETWBase):
             node["shadow"] = True
             node["color"] = self.node_type_color[node["type"]]
             self._set_node_tooltip_pyvis(node)
-        # Set edge attributes
-        # FIXME: does nothing at the moment, lost in igraph to networkx conversion
-        for edge in graph.es:
-            edge["shadow"] = True
         return graph
 
     def _set_node_tooltip_pyvis(self, node: ig.Vertex) -> None:

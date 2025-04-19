@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 class NoFlowError(Exception):
     pass
 
+
 class ObjectPosition(Enum):
     START = auto()
     INTERMEDIATE = auto()
@@ -22,14 +23,27 @@ class ObjectPosition(Enum):
 class EtlDag(GraphRETWFiles):
     def __init__(self):
         super().__init__()
-        self.node_position_color = {
+
+        self.colors_discrete = [
+            "#ff595e",
+            "#ff924c",
+            "#ffca3a",
+            "#c5ca30",
+            "#8ac926",
+            "#52a675",
+            "#1982c4",
+            "#4267ac",
+            "#6a4c93",
+            "#b5a6c9",
+        ]
+        self.color_node_position = {
             ObjectPosition.START.name: "gold",
             ObjectPosition.INTERMEDIATE.name: "yellowgreen",
             ObjectPosition.END.name: "lawngreen",
             ObjectPosition.UNDETERMINED.name: "red",
         }
 
-    def add_RETW_files(self, files_RETW: list, plot_intermediate: bool = False) -> bool:
+    def add_RETW_files(self, files_RETW: list, output_intermediate: bool = False) -> bool:
         """Process multiple RETW files.
 
         Processes each RETW file in the input list, generates the mapping order,
@@ -49,13 +63,13 @@ class EtlDag(GraphRETWFiles):
             # Add file to parser
             if self.add_RETW_file(file_RETW=file_RETW):
                 logger.info(f"Added RETW file '{file_RETW}'")
-                if plot_intermediate:
-                    self.plot_etl_dag(file_html=f"output/dag_structure_{i}.html")
                 dict_mapping_order = self.get_mapping_order()
-                with open(
-                    f"output/mapping_order_{i}.jsonl", "w", encoding="utf-8"
-                ) as file:
-                    json.dump(dict_mapping_order, file, indent=4)
+                if output_intermediate:
+                    self.plot_etl_dag(file_html=f"output/dag_structure_{i}.html")
+                    with open(
+                        f"output/mapping_order_{i}.jsonl", "w", encoding="utf-8"
+                    ) as file:
+                        json.dump(dict_mapping_order, file, indent=4)
             else:
                 logger.error(f"Failed to add RETW file '{file_RETW}'")
                 return False
@@ -71,12 +85,10 @@ class EtlDag(GraphRETWFiles):
         dag = self._dag_mapping_run_order(dag=dag)
         dag = self._dag_node_hierarchy_level(dag=dag)
 
-        # FIXME: Delete entities without mappings
+        # Delete entities without mappings
         vtxs_no_connections = []
         vtxs_no_connections.extend(
-            vtx.index
-            for vtx in dag.vs
-            if vtx["qty_in"] == 0 and vtx["qty_out"] == 0
+            vtx.index for vtx in dag.vs if vtx["qty_in"] == 0 and vtx["qty_out"] == 0
         )
 
         if vtxs_no_connections:
@@ -305,20 +317,23 @@ class EtlDag(GraphRETWFiles):
         Returns:
             ig.Graph: The DAG with attributes set for pyvis visualization.
         """
+        # Build model colouring dictionary
+        colors_model = {
+            model: self.colors_discrete[i]
+            for i, model in enumerate(list(set(dag.vs["CodeModel"])))
+            if model is not None
+        }
+        # Set node attributes
         for node in dag.vs:
             node["shape"] = (
                 "database" if node["type"] == VertexType.ENTITY.name else "hexagon"
             )
             node["shadow"] = True
-            self._set_node_color_pyvis(node)
+            self._set_node_color_pyvis(node, colors_model=colors_model)
             self._set_node_tooltip_pyvis(node)
-        # Set edge attributes
-        # FIXME: does nothing at the moment, lost in igraph to networkx conversion
-        for edge in dag.es:
-            edge["shadow"] = True
         return dag
 
-    def _set_node_color_pyvis(self, node: ig.Vertex) -> None:
+    def _set_node_color_pyvis(self, node: ig.Vertex, colors_model: dict) -> None:
         """Set the color of each node in the DAG based on its role and position.
 
         Assigns colors to nodes for visual differentiation based on whether they are mappings or entities,
@@ -332,8 +347,10 @@ class EtlDag(GraphRETWFiles):
         """
         if node["type"] == VertexType.MAPPING.name:
             node["color"] = self.node_type_color[node["type"]]
+        elif node["type"] == VertexType.ENTITY.name:
+            node["color"] = colors_model[node["CodeModel"]]
         else:
-            node["color"] = self.node_position_color[node["position"]]
+            node["color"] = self.color_node_position[node["position"]]
 
     def _set_node_tooltip_pyvis(self, node: ig.Vertex) -> None:
         """Set the tooltip for a node in the pyvis visualization.
