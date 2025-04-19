@@ -355,6 +355,7 @@ class GraphRETWFiles(GraphRETWBase):
             ]
             # For each of the mappings
             for vx_mapping in vs_mappings:
+                # Create edges between files if dependencies are found
                 edges_file = self._get_file_dependencies_for_mapping(
                     graph, vx_mapping, vx_file.index
                 )
