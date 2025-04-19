@@ -3,7 +3,6 @@ from datetime import datetime
 from pathlib import Path
 
 import igraph as ig
-from igraph.operators.functions import intersection
 
 from graph_base import EdgeType, GraphRETWBase, VertexType
 from log_config import logging
