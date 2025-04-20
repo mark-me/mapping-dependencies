@@ -52,7 +52,7 @@ class EtlFailure(DagReporting):
                 dag.vs.select(name=affected)["color"] = "red"
         return dag
 
-    def get_report_fallout(self) -> dict:
+    def get_report_fallout(self) -> list:
         """Retrieves dictionary reporting on the affected ETL components
 
         Returns:
