@@ -12,18 +12,16 @@ The directory ```dependency_checker``` contains a file ```example.py``` that sho
 
 The example references contains a list to example RETW files, that are placed in the subdirectory ```retw_examples```. The order of the files in the list is irrelevant to the functionality, so if you could add your own files to the list in a random order.
 
-It uses the class ```GraphRETWFiles```, which is defined in the file ```graph_retw_files.py```, to create visualizations of:
+It uses the class ```DagReporting```, that is defined in the file ```dag_reporting.py```, to create visualizations of:
 
 * the total network of files, entities and mappings,
-* a given entity's network of connected files, entities and mappings and
-* dependencies between files, based on entities they have in common.
+* a given entity's network of connected files, entities and mappings,
+* dependencies between files, based on entities they have in common and,
+* a visualization of the ETL flow for all RETW files combined.
 
-It uses the class ```EtlDag```, which is defined in the file ```dag_etl.py```, to create:
+It also generates a file that contains the ordering of the mappings in an ETL flow.
 
-* an ordering of the mappings in an ETL flow and,
-* a visualization of the ETL flow for all RETW files combined
-
-It uses the class ```ETLFailureSimulator```, which is defined in the file ```etl_failure_simualtor.py```, to create:
+It uses the class ```EtlFailure```, which is defined in the file ```dag_etl_failure.py```, to create:
 
 * a visualization of the consequences of a ETL-flow object failing and
 * a report on the failing ETL-flow objects
@@ -106,11 +104,10 @@ In this section I describe the classes, what they are used for and how they fit 
       hideEmptyMembersBox: true
 ---
 classDiagram
-  GraphRETWBase <|-- GraphRETWFiles
-  GraphRETWFiles <|-- DagETL
-  DagETL <|-- ETLFailureSimulator
-  GraphRETWBase *-- EdgeType
-  GraphRETWBase *-- VertexType
+  DagGenerator <|-- DagReporting
+  DagReporting <|-- EtlFailure
+  DagGenerator *-- EdgeType
+  DagGenerator *-- VertexType
 
   class VertexType{
     <<enumeration>>
@@ -126,24 +123,26 @@ classDiagram
     ENTITY_SOURCE
     ENTITY_TARGET
   }
-  class GraphRETWBase{
-    <<Abstract>>
+  class DagGenerator{
+    +add_RETW_files(list files_RETW)
+    +add_RETW_file(str file_RETW)
+    +get_dag_total()
+    +get_dag_single_retw_file(str file_RETW)
+    +get_dag_file_dependencies()
+    +get_dag_entity(str code_model, str code_entity)
+    +get_dag_ETL()
   }
-  class GraphRETWFiles{
-    +add_RETW_files(list)
-    +add_RETW_file(str)
-    +plot_graph_total(str)
-    +plot_graph_retw_file(str)
-    +plot_file_dependencies(str)
-    +plot_entity_journey(str)
-  }
-  class DagETL{
+  class DagReporting{
     +get_mapping_order() list
-    +plot_dag(str)
+    +plot_graph_total(str file_html)
+    +plot_graph_retw_file(str file_retw, str file_html)
+    +plot_file_dependencies(str file_html)
+    +plot_entity_journey(str code_model, str code_entity, str file_html)
+    +plot_etl_dag(str file_html)
   }
-  class ETLFailureSimulator{
-    +set_entities_failed(list)
-    +get_report_fallout() dict
-    +plot_dag_fallout(str)
+  class EtlFailure{
+    +set_pd_objects_failed(list)
+    +get_report_fallout() list
+    +plot_etl_fallout(str file_html)
   }
 ```
