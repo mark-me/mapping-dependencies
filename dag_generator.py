@@ -510,7 +510,7 @@ class DagGenerator:
     def get_dag_ETL(self) -> ig.Graph:
         vertices = list(self.mappings.values()) + list(self.entities.values())
         edge_types = [EdgeType.ENTITY_SOURCE.name, EdgeType.ENTITY_TARGET.name]
-        edges = [v for v in self.edges if v["type"] in edge_types]
+        edges = [e for e in self.edges if e["type"] in edge_types]
         dag = ig.Graph.DictList(vertices=vertices, edges=edges, directed=True)
         dag = self._dag_ETL_run_order(dag=dag)
 
