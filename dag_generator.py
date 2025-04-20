@@ -416,11 +416,11 @@ class DagGenerator:
         # Extract graph for relevant entity
         vx_model = dag.vs.select(CodeModel_eq=code_model)
         vx_entity = vx_model.select(Code_eq=code_entity)
-        vx_entity_graph = dag.subcomponent(vx_entity[0], mode="in") + dag.subcomponent(
+        vs_entity_graph = dag.subcomponent(vx_entity[0], mode="in") + dag.subcomponent(
             vx_entity[0], mode="out"
         )
-        vx_delete = [i for i in dag.vs.indices if i not in vx_entity_graph]
-        dag.delete_vertices(vx_delete)
+        vs_delete = [i for i in dag.vs.indices if i not in vs_entity_graph]
+        dag.delete_vertices(vs_delete)
         return dag
 
     def _dag_ETL_run_order(self, dag: ig.Graph) -> ig.Graph:
@@ -436,8 +436,8 @@ class DagGenerator:
         # For each node calculate the number of mapping nodes before the current node
         lst_mapping_order = [
             sum(
-                dag.vs[vtx]["type"] == VertexType.MAPPING.name
-                for vtx in dag.subcomponent(dag.vs[i], mode="in")
+                dag.vs[vs]["type"] == VertexType.MAPPING.name
+                for vs in dag.subcomponent(dag.vs[i], mode="in")
             )
             - 1
             for i in range(dag.vcount())
@@ -463,15 +463,15 @@ class DagGenerator:
         """
         dict_level_runs = {}
         # All mapping nodes
-        nodes_mapping = dag.vs.select(type_eq=VertexType.MAPPING.name)
+        vs_mapping = dag.vs.select(type_eq=VertexType.MAPPING.name)
 
         # Determine run stages of mappings by run level
-        run_levels = list({node["run_level"] for node in nodes_mapping})
+        run_levels = list({node["run_level"] for node in vs_mapping})
         for run_level in run_levels:
             # Find run_level mappings and corresponding source entities
             mapping_sources = [
                 {"mapping": mapping["Id"], "sources": dag.predecessors(mapping)}
-                for mapping in nodes_mapping.select(run_level_eq=run_level)
+                for mapping in vs_mapping.select(run_level_eq=run_level)
             ]
             # Create graph of mapping conflicts (mappings that draw on the same sources)
             graph_conflicts = self._dag_ETL_run_level_conflicts_graph(mapping_sources)
@@ -515,15 +515,15 @@ class DagGenerator:
         dag = self._dag_ETL_run_order(dag=dag)
 
         # Delete entities without mappings
-        vtxs_no_connections = []
-        vtxs_no_connections.extend(
+        vs_no_connections = []
+        vs_no_connections.extend(
             vtx.index
             for vtx in dag.vs
             if dag.degree(vtx, mode="in") == 0 and dag.degree(vtx, mode="out") == 0
         )
 
-        if vtxs_no_connections:
-            dag.delete_vertices(vtxs_no_connections)
+        if vs_no_connections:
+            dag.delete_vertices(vs_no_connections)
             if dag is None:
                 raise NoFlowError("No mappings, so no ETL flow")
         logger.info("Build graph mappings")
