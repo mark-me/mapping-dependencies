@@ -1,33 +1,61 @@
 import json
 from datetime import datetime
+from enum import Enum, auto
 from pathlib import Path
 
 import igraph as ig
 
-from graph_base import EdgeType, GraphRETWBase, VertexType
 from log_config import logging
 
 logger = logging.getLogger(__name__)
 
 
-class GraphRETWFiles(GraphRETWBase):
-    """Represents a graph of RETW files, mappings, and entities.
+class VertexType(Enum):
+    """Enumerates the types of vertices in the graph.
 
-    This class extends GraphRETWBase and provides functionalities to build and visualize a graph
-    representing relationships between RETW files, mappings, and entities.
+    Provides distinct identifiers for each type of node in the graph, including entities, mappings, and files.
+    """
+
+    ENTITY = auto()
+    MAPPING = auto()
+    FILE_RETW = auto()
+    ERROR = auto()
+
+
+class EdgeType(Enum):
+    """Enumerates the types of edges in the graph.
+
+    Provides distinct identifiers for each type of edge in the graph, representing relationships between files, mappings, and entities.
+    """
+
+    FILE_ENTITY = auto()
+    FILE_MAPPING = auto()
+    ENTITY_SOURCE = auto()
+    ENTITY_TARGET = auto()
+
+
+class NoFlowError(Exception):
+    pass
+
+
+class DagGenerator:
+    """Generates and manages directed acyclic graphs (DAGs) representing ETL processes.
+
+    This class handles the creation, manipulation, and analysis of DAGs based on extracted information
+    from RETW files. It provides methods to add RETW files, build DAGs representing
+    the entire ETL process or individual files, determine execution order, and identify dependencies.
     """
 
     def __init__(self):
-        """Initializes a new instance of the GraphRETWFiles class.
+        """Initializes a new instance of the DagGenerator class.
 
-        Initializes dictionaries to store files, entities, and mappings, a list for edges, and an igraph graph object.
+        Sets up the initial state by creating empty dictionaries to store RETW files, entities, mappings, and a list to store edges.
+        These data structures will be populated as RETW files are added and processed.
         """
-        super().__init__()
         self.files_RETW = {}
         self.entities = {}
         self.mappings = {}
         self.edges = []
-        self.graph = ig.Graph()
 
     def add_RETW_files(self, files_RETW: list) -> bool:
         """Process multiple RETW files.
@@ -78,10 +106,10 @@ class GraphRETWFiles(GraphRETWBase):
                     "type": VertexType.FILE_RETW.name,
                     "Order": order_added,
                     "FileRETW": file_RETW,
-                    "TimeCreated": datetime.fromtimestamp(
+                    "CreationDate": datetime.fromtimestamp(
                         Path(file_RETW).stat().st_ctime
                     ).strftime("%Y-%m-%d %H:%M:%S"),
-                    "TimeModified": datetime.fromtimestamp(
+                    "ModificationDate": datetime.fromtimestamp(
                         Path(file_RETW).stat().st_mtime
                     ).strftime("%Y-%m-%d %H:%M:%S"),
                 }
@@ -260,7 +288,7 @@ class GraphRETWFiles(GraphRETWBase):
         }
         self.edges.append(edge_entity_mapping)
 
-    def _build_graph_total(self) -> ig.Graph:
+    def get_dag_total(self) -> ig.Graph:
         """Build the total graph from mappings, entities, and files.
 
         Constructs an igraph graph using the collected mappings, entities, and files as vertices,
@@ -280,7 +308,7 @@ class GraphRETWFiles(GraphRETWBase):
         logger.info("Build graph total")
         return graph
 
-    def _build_graph_retw_file(self, file_retw: str) -> ig.Graph:
+    def get_dag_single_retw_file(self, file_retw: str) -> ig.Graph:
         """Build a subgraph for a specific RETW file.
 
         Builds the total graph and extracts the subgraph related to a specific RETW file.
@@ -293,15 +321,15 @@ class GraphRETWFiles(GraphRETWBase):
         """
 
         logger.info(f"Creating a graph for the file, '{file_retw}'")
-        graph = self._build_graph_total()
-        vx_file = graph.vs.select(FileRETW_eq=file_retw)
-        vx_file_graph = graph.subcomponent(vx_file[0], mode="out")
-        vx_delete = [i for i in graph.vs.indices if i not in vx_file_graph]
-        graph.delete_vertices(vx_delete)
-        return graph
+        dag = self.get_dag_total()
+        vx_file = dag.vs.select(FileRETW_eq=file_retw)
+        vx_file_graph = dag.subcomponent(vx_file[0], mode="out")
+        vx_delete = [i for i in dag.vs.indices if i not in vx_file_graph]
+        dag.delete_vertices(vx_delete)
+        return dag
 
     def _get_file_dependencies_for_mapping(
-        self, graph: ig.Graph, vx_mapping: int, vx_file_index: int
+        self, dag: ig.Graph, vx_mapping: int, vx_file_index: int
     ) -> list:
         """Get file dependencies for a specific mapping.
 
@@ -316,23 +344,23 @@ class GraphRETWFiles(GraphRETWBase):
             list: A list of tuples representing file dependencies (source_file, target_file).
         """
         # Always look two nodes back, to see if a source entity is created in another file
-        vs_predecessors = graph.neighborhood(vx_mapping, mode="in", order=2)
+        vs_predecessors = dag.neighborhood(vx_mapping, mode="in", order=2)
         # Only keep file nodes
         vs_preceeding_files = [
             vs.index
-            for vs in graph.vs.select(vs_predecessors)
+            for vs in dag.vs.select(vs_predecessors)
             if vs["type"] == VertexType.FILE_RETW.name
         ]
         # Remove file that is being looked into
         vs_preceeding_files.remove(vx_file_index)
         # Get file node id's of the dependencies
         vs_preceeding_files = [
-            (vs["name"], graph.vs[vx_file_index]["name"])
-            for vs in graph.vs.select(vs_preceeding_files)
+            (vs["name"], dag.vs[vx_file_index]["name"])
+            for vs in dag.vs.select(vs_preceeding_files)
         ]
         return vs_preceeding_files
 
-    def _build_graph_file_dependencies(self) -> ig.Graph:
+    def get_dag_file_dependencies(self) -> ig.Graph:
         """Build a graph of dependencies between RETW files.
 
         Constructs a graph where nodes represent RETW files and edges represent dependencies
@@ -342,22 +370,22 @@ class GraphRETWFiles(GraphRETWBase):
         Returns:
             ig.Graph: The graph representing file dependencies.
         """
-        graph = self._build_graph_total()
-        vs_files = graph.vs.select(type_eq=VertexType.FILE_RETW.name)
+        dag = self.get_dag_total()
+        vs_files = dag.vs.select(type_eq=VertexType.FILE_RETW.name)
         lst_edges_files = []
         for vx_file in vs_files:
             # Get mappings created in the file
-            vs_objects = graph.successors(vx_file)
+            vs_objects = dag.successors(vx_file)
             vs_mappings = [
                 vs.index
-                for vs in graph.vs.select(vs_objects)
+                for vs in dag.vs.select(vs_objects)
                 if vs["type"] == VertexType.MAPPING.name
             ]
             # For each of the mappings
             for vx_mapping in vs_mappings:
                 # Create edges between files if dependencies are found
                 edges_file = self._get_file_dependencies_for_mapping(
-                    graph, vx_mapping, vx_file.index
+                    dag, vx_mapping, vx_file.index
                 )
                 lst_edges_files.extend(edges_file)
         # Make unique edges between files
@@ -366,153 +394,137 @@ class GraphRETWFiles(GraphRETWBase):
             for file_from, file_to in list(set(lst_edges_files))
         ]
         lst_files = list(self.files_RETW.values())
-        graph = ig.Graph.DictList(
+        dag = ig.Graph.DictList(
             vertices=lst_files, edges=lst_edges_files, directed=True
         )
-        return graph
+        return dag
 
-    def _set_attributes_pyvis(self, graph: ig.Graph) -> ig.Graph:
-        """Set attributes for pyvis visualization.
+    def get_dag_entity(self, code_model: str, code_entity: str) -> ig.Graph:
+        """Build a subgraph for a specific entity.
 
-        Sets the shape, shadow, color, and tooltip for each node in the graph
-        based on their type and other properties. Also sets the shadow for edges.
-
-        Args:
-            graph (ig.Graph): The igraph graph to set attributes for.
-
-        Returns:
-            ig.Graph: The graph with attributes set for pyvis visualization.
-        """
-        logger.info("Setting graphical attributes of the graph")
-        for node in graph.vs:
-            node["shape"] = self.pyvis_type_shape[node["type"]]
-            node["shadow"] = True
-            node["color"] = self.node_type_color[node["type"]]
-            self._set_node_tooltip_pyvis(node)
-        return graph
-
-    def _set_node_tooltip_pyvis(self, node: ig.Vertex) -> None:
-        """Set the tooltip for a node in the pyvis visualization.
-
-        Sets the 'title' attribute of the node, which is used as a tooltip in pyvis,
-        containing detailed information about the node.
-
-        Args:
-            node (ig.Vertex): The node to set the tooltip for.
-        """
-        if node["type"] == VertexType.FILE_RETW.name:
-            node["title"] = f"""FileRETW: {node["FileRETW"]}
-                    Order: {node["Order"]}
-                    Created: {node["TimeCreated"]}
-                    Modified: {node["TimeModified"]}"""
-        if node["type"] in [VertexType.MAPPING.name, VertexType.ENTITY.name]:
-            node["title"] = f"""Name: {node["Name"]}
-                        Code: {node["Code"]}
-                        Id: {node["Id"]}
-                    """
-        if node["type"] == VertexType.MAPPING.name:
-            node["title"] = (
-                node["title"]
-                + f"""
-                    CreationDate: {node["CreationDate"]}
-                    Creator: {node["Creator"]}
-                    ModificationDate: {node["ModificationDate"]}
-                    Modifier: {node["Modifier"]}
-                """
-            )
-        elif node["type"] == VertexType.ENTITY.name:
-            node["title"] = node["title"] + f"Model: {node['CodeModel']}"
-
-    def plot_graph_total(self, file_html: str) -> None:
-        """Plot the total graph and save it to an HTML file.
-
-        Builds the total graph, sets pyvis attributes, and visualizes it in an HTML file.
-
-        Args:
-            file_html (str): The path to the HTML file where the plot will be saved.
-
-        Returns:
-            None
-        """
-        logger.info(
-            f"Create a network plot, '{file_html}', for files, entities and mappings"
-        )
-        graph = self._build_graph_total()
-        graph = self._set_attributes_pyvis(graph=graph)
-        self.plot_graph_html(graph=graph, file_html=file_html)
-
-    def plot_graph_retw_file(self, file_retw: str, file_html: str) -> None:
-        """Plot the graph for a specific RETW file.
-
-        Builds the total graph, selects the subgraph related to a specific RETW file,
-        sets pyvis attributes, and visualizes it in an HTML file.
-
-        Args:
-            file_retw (str): Path to the RETW file.
-            file_html (str): Path to the output HTML file.
-
-        Returns:
-            None
-        """
-        logger.info(
-            f"Creating a network plot, '{file_html}', for entities and mappings of a single RETW file"
-        )
-        graph = self._build_graph_retw_file(file_retw=file_retw)
-        graph = self._set_attributes_pyvis(graph=graph)
-        self.plot_graph_html(graph=graph, file_html=file_html)
-
-    def plot_file_dependencies(self, file_html: str) -> None:
-        """Plot the dependencies between RETW files.
-
-        Generates and visualizes a graph showing dependencies between RETW files based on shared objects.
-        The visualization is saved to an HTML file.
-
-        Args:
-            file_html (str): Path to the output HTML file.
-
-        Returns:
-            None
-        """
-        logger.info(
-            f"Creating a network plot, '{file_html}', showing RETW file dependencies"
-        )
-        graph_files = self._build_graph_file_dependencies()
-        graph_files = self._set_attributes_pyvis(graph=graph_files)
-        self.plot_graph_html(graph=graph_files, file_html=file_html)
-
-    def plot_entity_journey(
-        self, code_model: str, code_entity: str, file_html: str
-    ) -> None:
-        """Plot the journey of an entity through the graph.
-
-        Builds the total graph, selects a specific entity based on its code and model,
-        extracts the subgraph representing the entity's journey (incoming and outgoing connections),
-        sets pyvis attributes, converts to NetworkX, and visualizes it in an HTML file.
+        Builds the total graph and extracts the subgraph related to a specific entity,
+        including its incoming and outgoing connections.
 
         Args:
             code_model (str): The code of the model containing the entity.
             code_entity (str): The code of the entity.
-            file_html (str, optional): The path to the HTML file where the plot will be saved. Defaults to None.
 
         Returns:
-            None
+            ig.Graph: The subgraph for the specified entity.
         """
-        logger.info(
-            f"Creating a network plot, '{file_html}', for all dependencies of entity '{code_model}.{code_entity}'."
-        )
-        graph = self._build_graph_total()
+        dag = self.get_dag_total()
         # Extract graph for relevant entity
-        vx_model = graph.vs.select(CodeModel_eq=code_model)
+        vx_model = dag.vs.select(CodeModel_eq=code_model)
         vx_entity = vx_model.select(Code_eq=code_entity)
-        vx_entity_graph = graph.subcomponent(
-            vx_entity[0], mode="in"
-        ) + graph.subcomponent(vx_entity[0], mode="out")
-        vx_delete = [i for i in graph.vs.indices if i not in vx_entity_graph]
-        graph.delete_vertices(vx_delete)
-        # Visualization
-        graph = self._set_attributes_pyvis(graph=graph)
-        # Recolor requested entity
-        vx_model = graph.vs.select(CodeModel_eq=code_model)
-        vx_entity = vx_model.select(Code_eq=code_entity)
-        graph.vs[vx_entity.indices[0]]["color"] = "lightseagreen"
-        self.plot_graph_html(graph=graph, file_html=file_html)
+        vx_entity_graph = dag.subcomponent(vx_entity[0], mode="in") + dag.subcomponent(
+            vx_entity[0], mode="out"
+        )
+        vx_delete = [i for i in dag.vs.indices if i not in vx_entity_graph]
+        dag.delete_vertices(vx_delete)
+        return dag
+
+    def _dag_ETL_run_order(self, dag: ig.Graph) -> ig.Graph:
+        """Erich the DAG with the sequence the mappings should run in
+
+        Args:
+            dag (ig.Graph): DAG that describes entities and mappings
+
+        Returns:
+            ig.Graph: DAG where the vertices are enriched with the attribute 'run_level',
+            entity vertices get the value -1
+        """
+        # For each node calculate the number of mapping nodes before the current node
+        lst_mapping_order = [
+            sum(
+                dag.vs[vtx]["type"] == VertexType.MAPPING.name
+                for vtx in dag.subcomponent(dag.vs[i], mode="in")
+            )
+            - 1
+            for i in range(dag.vcount())
+        ]
+        # Assign valid run order to mappings only
+        lst_run_level = []
+        lst_run_level.extend(
+            run_level if role == VertexType.MAPPING.name else -1
+            for run_level, role in zip(lst_mapping_order, dag.vs["type"])
+        )
+        dag.vs["run_level"] = lst_run_level
+        dag = self._dag_ETL_run_level_stages(dag=dag)
+        return dag
+
+    def _dag_ETL_run_level_stages(self, dag: ig.Graph) -> ig.Graph:
+        """Determine mapping stages for each run level
+
+        Args:
+            dag (ig.Graph): DAG describing the ETL
+
+        Returns:
+            ig.Graph: ETL stages for a level added in the mapping vertex attribute 'stage'
+        """
+        dict_level_runs = {}
+        # All mapping nodes
+        nodes_mapping = dag.vs.select(type_eq=VertexType.MAPPING.name)
+
+        # Determine run stages of mappings by run level
+        run_levels = list({node["run_level"] for node in nodes_mapping})
+        for run_level in run_levels:
+            # Find run_level mappings and corresponding source entities
+            mapping_sources = [
+                {"mapping": mapping["Id"], "sources": dag.predecessors(mapping)}
+                for mapping in nodes_mapping.select(run_level_eq=run_level)
+            ]
+            # Create graph of mapping conflicts (mappings that draw on the same sources)
+            graph_conflicts = self._dag_ETL_run_level_conflicts_graph(mapping_sources)
+            # Determine unique sorting for conflicts
+            order = graph_conflicts.vertex_coloring_greedy(method="colored_neighbors")
+            # Apply them back to the DAG
+            dict_level_runs |= dict(zip(graph_conflicts.vs["name"], order))
+            for k, v in dict_level_runs.items():
+                dag.vs.select(Id_eq=k)["run_level_stage"] = v
+        return dag
+
+    def _dag_ETL_run_level_conflicts_graph(self, mapping_sources: dict) -> ig.Graph:
+        """Generate a graph expressing which mappings share sources
+
+        Args:
+            mapping_sources (dict): Mappings with a list of source node ids for each of them
+
+        Returns:
+            ig.Graph: Expressing mapping sharing source entities
+        """
+        lst_vertices = [{"name": mapping["mapping"]} for mapping in mapping_sources]
+        lst_edges = []
+        for a in mapping_sources:
+            for b in mapping_sources:
+                if a["mapping"] < b["mapping"]:
+                    qty_common = len(set(a["sources"]) & set(b["sources"]))
+                    if qty_common > 0:
+                        lst_edges.append(
+                            {"source": a["mapping"], "target": b["mapping"]}
+                        )
+        graph_conflicts = ig.Graph.DictList(
+            vertices=lst_vertices, edges=lst_edges, directed=False
+        )
+        return graph_conflicts
+
+    def get_dag_ETL(self) -> ig.Graph:
+        vertices = list(self.mappings.values()) + list(self.entities.values())
+        edge_types = [EdgeType.ENTITY_SOURCE.name, EdgeType.ENTITY_TARGET.name]
+        edges = [v for v in self.edges if v["type"] in edge_types]
+        dag = ig.Graph.DictList(vertices=vertices, edges=edges, directed=True)
+        dag = self._dag_ETL_run_order(dag=dag)
+
+        # Delete entities without mappings
+        vtxs_no_connections = []
+        vtxs_no_connections.extend(
+            vtx.index
+            for vtx in dag.vs
+            if dag.degree(vtx, mode="in") == 0 and dag.degree(vtx, mode="out") == 0
+        )
+
+        if vtxs_no_connections:
+            dag.delete_vertices(vtxs_no_connections)
+            if dag is None:
+                raise NoFlowError("No mappings, so no ETL flow")
+        logger.info("Build graph mappings")
+        return dag

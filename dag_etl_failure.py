@@ -1,0 +1,91 @@
+import igraph as ig
+
+from dag_reporting import DagReporting, NoFlowError, VertexType
+from log_config import logging
+
+logger = logging.getLogger(__name__)
+
+
+class EtlFailure(DagReporting):
+    def __init__(self):
+        super().__init__()
+        self.dag = ig.Graph()
+        self.impact = []
+
+    def set_pd_objects_failed(self, pd_ids: list) -> None:
+        """Sets the status of an entity (or mapping) to failed, and derives the consequences in the ETL DAG.
+
+        Args:
+            id (str): The 'o' identifier of an object
+
+        Returns:
+            nx.DiGraph: A networkx graph with the failure and it's consequences.
+        """
+        try:
+            dag = self.get_dag_ETL()
+        except NoFlowError:
+            logger.error("There are no mappings, so there is no ETL flow!")
+            return
+        for pd_id in pd_ids:
+            try:
+                vx_failed = dag.vs.find(Id=pd_id)
+            except ValueError:
+                logger.error(f"Can't find node '{pd_id}' in ETL flow!")
+            ids_affected = dag.subcomponent(vx_failed.index, mode="out")
+            ids_affected.remove(vx_failed.index)
+            self.impact.append(
+                {"failed": vx_failed["name"], "affected": dag.vs(ids_affected)["name"]}
+            )
+
+    def _format_failure_impact(self, dag: ig.Graph) -> ig.Graph:
+        """Update the DAG to reflect the impact of failed nodes.
+
+        Identifies and marks nodes affected by the failures, updating their visual attributes (color, shape) in the DAG.
+
+        Returns:
+            ig.Graph: The updated DAG.
+        """
+        for failure in self.impact:
+            dag.vs.select(name=failure["failed"])["color"] = "red"
+            dag.vs.select(name=failure["failed"])["shape"] = "star"
+            for affected in failure["affected"]:
+                dag.vs.select(name=affected)["color"] = "red"
+        return dag
+
+    def get_report_fallout(self) -> dict:
+        """Retrieves dictionary reporting on the affected ETL components
+
+        Returns:
+            dict: Report on mappings and entities that failed or are affected by the failure
+        """
+        result = []
+        dag = self.get_dag_ETL()
+        for failure in self.impact:
+            vs_affected = dag.vs.select(name_in=failure["affected"])
+            mappings_data = [
+                vx.attributes()
+                for vx in vs_affected
+                if vx["type"] == VertexType.MAPPING.name
+            ]
+            entities_data = [
+                vx.attributes()
+                for vx in vs_affected
+                if vx["type"] == VertexType.ENTITY.name
+            ]
+            failed = [vx.attributes() for vx in dag.vs.select(name=failure["failed"])][0]
+            result.append(
+                {
+                    "failed": failed,
+                    "affected": {"mappings": mappings_data, "entities": entities_data},
+                }
+            )
+        return result
+
+    def plot_etl_fallout(self, file_html: str) -> None:
+        dag = self.get_dag_ETL()
+        dag = self._calculate_node_levels(dag=dag)
+        dag = self._dag_node_hierarchy_level(dag=dag)
+        dag = self._set_visual_attributes(dag=dag)
+        dag = self._dag_etl_coloring(dag=dag)
+        dag = self._format_failure_impact(dag=dag)
+        self.plot_graph_html(dag=dag, file_html=file_html)
