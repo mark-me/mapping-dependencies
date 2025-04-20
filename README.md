@@ -19,7 +19,10 @@ It uses the class ```DagReporting```, that is defined in the file ```dag_reporti
 * dependencies between files, based on entities they have in common and,
 * a visualization of the ETL flow for all RETW files combined.
 
-It also generates a file that contains the ordering of the mappings in an ETL flow.
+It also generates files that contain:
+
+* the ordering of the mappings in an ETL flow and
+* the entities which are used in mappings, but lack a definition in one of the files.
 
 It uses the class ```EtlFailure```, which is defined in the file ```dag_etl_failure.py```, to create:
 

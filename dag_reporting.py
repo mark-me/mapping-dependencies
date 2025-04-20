@@ -359,6 +359,25 @@ class DagReporting(DagGenerator):
         dag.vs[vx_entity.indices[0]]["color"] = "lightseagreen"
         self.plot_graph_html(dag=dag, file_html=file_html)
 
+    def get_entities_without_definition(self) -> list:
+        """Identifies entities without a definition in the DAG.
+
+        This function checks for entities that do not have any incoming connections from a RETW file,
+        indicating they lack a definition within the current scope.
+
+        Returns:
+            list: A list of dictionaries, where each dictionary represents an entity without a definition
+                  and contains its attributes.
+        """
+        lst_entities = []
+        dag = self.get_dag_total()
+        vs_entities = dag.vs.select(type_eq=VertexType.ENTITY.name)
+        for vx_entity in vs_entities:
+            vs_in = dag.vs(dag.neighbors(vx_entity, mode="in"))
+            if not [vx for vx in vs_in if vx["type"] == VertexType.FILE_RETW.name]:
+                lst_entities.append(vx_entity.attributes())
+        return lst_entities
+
     def get_mapping_order(self) -> list:
         """Returns mappings and order of running (could be parallel,
         in which case other sub-sorting should be implemented if needed)
