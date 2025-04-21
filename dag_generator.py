@@ -523,6 +523,18 @@ class DagGenerator:
         return graph_conflicts
 
     def get_dag_ETL(self) -> ig.Graph:
+        """Build the ETL DAG, showing the flow of data between entities and mappings.
+
+        Constructs a directed acyclic graph (DAG) representing the ETL process,
+        including mappings and entities as vertices, and their relationships as edges.
+        The DAG is enriched with run order information and isolated entities are removed.
+
+        Returns:
+            ig.Graph: The ETL DAG.
+
+        Raises:
+            NoFlowError: If no mappings are found, indicating no ETL flow.
+        """
         vertices = list(self.mappings.values()) + list(self.entities.values())
         edge_types = [EdgeType.ENTITY_SOURCE.name, EdgeType.ENTITY_TARGET.name]
         edges = [e for e in self.edges if e["type"] in edge_types]
