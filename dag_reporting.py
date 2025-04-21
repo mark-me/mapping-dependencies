@@ -7,7 +7,7 @@ import igraph as ig
 import networkx as nx
 from pyvis.network import Network
 
-from dag_generator import DagGenerator, VertexType, NoFlowError
+from dag_generator import DagGenerator, EntityRef, MappingRef, NoFlowError, VertexType
 from log_config import logging
 
 logger = logging.getLogger(__name__)
@@ -332,34 +332,28 @@ class DagReporting(DagGenerator):
         dag_files = self._set_visual_attributes(dag=dag_files)
         self.plot_graph_html(dag=dag_files, file_html=file_html)
 
-    def plot_entity_journey(
-        self, code_model: str, code_entity: str, file_html: str
-    ) -> None:
-        """Plot the journey of an entity through the graph.
+    def plot_entity_journey(self, entity: EntityRef, file_html: str) -> None:
+        """Plot the journey of an entity through the DAG.
 
-        Builds the total graph, selects a specific entity based on its code and model,
-        extracts the subgraph representing the entity's journey (incoming and outgoing connections),
-        sets pyvis attributes, converts to NetworkX, and visualizes it in an HTML file.
+        Generates and visualizes a graph showing the complete journey of a specific entity,
+        including all its dependencies and related mappings.
 
         Args:
-            code_model (str): The code of the model containing the entity.
-            code_entity (str): The code of the entity.
-            file_html (str, optional): The path to the HTML file where the plot will be saved. Defaults to None.
+            entity (EntityRef): The entity to plot the journey for.
+            file_html (str): Path to the output HTML file.
 
         Returns:
             None
         """
         logger.info(
-            f"Creating a network plot, '{file_html}', for all dependencies of entity '{code_model}.{code_entity}'."
+            f"Creating a network plot, '{file_html}', for all dependencies of entity '{entity[0]}.{entity[1]}'."
         )
-        dag = self.get_dag_entity(
-            code_model=code_model, code_entity=code_entity
-        )  # Visualization
+        dag = self.get_dag_entity(entity=entity)  # Visualization
         dag = self._set_visual_attributes(dag=dag)
         # Recolor requested entity
-        vx_model = dag.vs.select(CodeModel_eq=code_model)
-        vx_entity = vx_model.select(Code_eq=code_entity)
-        dag.vs[vx_entity.indices[0]]["color"] = "#f296bf"
+        id_entity = self.get_entity_id(entity_ref=entity)
+        vx_entity = dag.vs.select(name=id_entity)[0]
+        dag.vs[vx_entity.index]["color"] = "#f296bf"
         self.plot_graph_html(dag=dag, file_html=file_html)
 
     def get_entities_without_definition(self) -> list:

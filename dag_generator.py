@@ -1,4 +1,6 @@
 import json
+import hashlib
+from collections import namedtuple
 from datetime import datetime
 from enum import Enum, auto
 from pathlib import Path
@@ -8,6 +10,9 @@ import igraph as ig
 from log_config import logging
 
 logger = logging.getLogger(__name__)
+
+EntityRef = namedtuple("EntityRef", ("CodeModel", "CodeEntity"))
+MappingRef = namedtuple("MappingRef", ("FileRETW", "CodeMapping"))
 
 
 class VertexType(Enum):
@@ -101,7 +106,7 @@ class DagGenerator:
 
         # Add file node information
         order_added = len(self.files_RETW)
-        id_file = hash(file_RETW)
+        id_file = self.get_file_id(file_RETW)
         self.files_RETW |= {
             id_file: {
                 "name": id_file,
@@ -118,22 +123,78 @@ class DagGenerator:
         }
 
         logger.info(f"Adding entities 'created' in the RETW file '{file_RETW}'")
-        self._add_model_entities(id_file=id_file, dict_RETW=dict_RETW)
+        self._add_model_entities(file_RETW=file_RETW, dict_RETW=dict_RETW)
         if "Mappings" in dict_RETW:
             logger.info(f"Adding mappings from the RETW file '{file_RETW}'")
-            self._add_mappings(id_file=id_file, mappings=dict_RETW["Mappings"])
+            self._add_mappings(file_RETW=file_RETW, mappings=dict_RETW["Mappings"])
         else:
             logger.warning(f"No mappings from the RETW file '{file_RETW}'")
         return True
 
-    def _add_model_entities(self, id_file: int, dict_RETW: list) -> None:
+    def _stable_hash(self, key: str) -> int:
+        """Generate a stable hash from a string.
+
+        Creates a stable hash value from a given string using MD5.
+        The hash is converted to an integer for consistent usage.
+
+        Args:
+            key (str): The input string.
+
+        Returns:
+            int: The stable hash value as an integer.
+        """
+        str_bytes = bytes(key, "UTF-8")
+        hash_md5 = hashlib.md5(str_bytes)
+        return int(hash_md5.hexdigest(), base=16)
+
+    def get_file_id(self, file: str) -> int:
+        """Generate a stable hash ID for a file.
+
+        Args:
+            file (str): The file path.
+
+        Returns:
+            int: The stable hash ID for the file.
+        """
+        return self._stable_hash(key=file)
+
+    def get_entity_id(self, entity_ref: EntityRef) -> int:
+        """Generate a stable hash ID for an entity.
+
+        Creates a stable hash value from the combined entity code and model code.
+
+        Args:
+            entity_ref (EntityRef): A namedtuple containing the entity's code model and code.
+
+        Returns:
+            int: The stable hash ID for the entity.
+        """
+        code_model, code_entity = entity_ref
+        return self._stable_hash(key=code_model + code_entity)
+
+    def get_mapping_id(self, mapping_ref: MappingRef) -> int:
+        """Generate a stable hash ID for a mapping.
+
+        Creates a stable hash value from the combined RETW file path and mapping code.
+
+        Args:
+            mapping_ref (MappingRef): A namedtuple containing the RETW file path and mapping code.
+
+        Returns:
+            int: The stable hash ID for the mapping.
+        """
+        file_RETW, code_mapping = mapping_ref
+        id_file = self.get_file_id(file=file_RETW)
+        return self._stable_hash(key=str(id_file) + code_mapping)
+
+    def _add_model_entities(self, file_RETW: str, dict_RETW: list) -> None:
         """Add model entities to the graph.
 
         Extracts entities from the document model in the RETW dictionary and adds them as nodes to the graph.
         Also adds edges between the file and its entities.
 
         Args:
-            id_file (int): id of the RETW file.
+            file_RETW (str): RETW file path
             dict_RETW (list): Dictionary containing RETW data.
 
         Returns:
@@ -144,11 +205,11 @@ class DagGenerator:
             model for model in dict_RETW["Models"] if model["IsDocumentModel"] is True
         ][0]
         if "Entities" not in model:
-            logger.warning(f"No entities for a document model in '{id_file}'")
+            logger.warning(f"No entities for a document model in '{file_RETW}'")
             return
 
         for entity in model["Entities"]:
-            id_entity = hash(model["Code"] + entity["Code"])
+            id_entity = self.get_entity_id(EntityRef(model["Code"], entity["Code"]))
             dict_entity = {
                 id_entity: {
                     "name": id_entity,
@@ -167,13 +228,13 @@ class DagGenerator:
             }
             self.entities.update(dict_entity)
             edge_entity_file = {
-                "source": id_file,
+                "source": self.get_file_id(file=file_RETW),
                 "target": id_entity,
                 "type": EdgeType.FILE_ENTITY.name,
             }
             self.edges.append(edge_entity_file)
 
-    def _add_mappings(self, id_file: int, mappings: dict) -> None:
+    def _add_mappings(self, file_RETW: str, mappings: dict) -> None:
         """Add mappings to the graph.
 
         Processes each mapping extracted from the RETW dictionary, adds them as nodes to the graph,
@@ -181,14 +242,16 @@ class DagGenerator:
         source and target entities.
 
         Args:
-            id_file (int): id of the RETW file.
+            file_RETW (str): RETW file path.
             mappings (dict): Dictionary containing mapping data.
 
         Returns:
             None
         """
         for mapping_RETW in mappings:
-            id_mapping = hash(str(id_file) + mapping_RETW["Id"])
+            id_mapping = self.get_mapping_id(
+                MappingRef(file_RETW, mapping_RETW["Code"])
+            )
             mapping = {
                 id_mapping: {
                     "name": id_mapping,
@@ -204,7 +267,7 @@ class DagGenerator:
             }
             self.mappings.update(mapping)
             edge_mapping_file = {
-                "source": id_file,
+                "source": self.get_file_id(file=file_RETW),
                 "target": id_mapping,
                 "type": EdgeType.FILE_MAPPING.name,
                 "CreationDate": mapping_RETW["CreationDate"],
@@ -237,9 +300,14 @@ class DagGenerator:
             return
         for source in mapping["SourceComposition"]:
             source_entity = source["Entity"]
-            if "Stereotype" in source_entity and source_entity["Stereotype"] == "mdde_FilterBusinessRule":
+            if (
+                "Stereotype" in source_entity
+                and source_entity["Stereotype"] == "mdde_FilterBusinessRule"
+            ):
                 continue
-            id_entity = hash(source_entity["CodeModel"] + source_entity["Code"])
+            id_entity = self.get_entity_id(
+                EntityRef(source_entity["CodeModel"], source_entity["Code"])
+            )
             entity = {
                 id_entity: {
                     "name": id_entity,
@@ -275,7 +343,9 @@ class DagGenerator:
         if "EntityTarget" not in mapping:
             logger.error(f"No target entity for mapping '{mapping['Name']}'")
         target_entity = mapping["EntityTarget"]
-        id_entity = hash(target_entity["CodeModel"] + target_entity["Code"])
+        id_entity = self.get_entity_id(
+            EntityRef(target_entity["CodeModel"], target_entity["Code"])
+        )
         entity = {
             id_entity: {
                 "name": id_entity,
@@ -416,7 +486,7 @@ class DagGenerator:
         )
         return dag_dependencies
 
-    def get_dag_entity(self, code_model: str, code_entity: str) -> ig.Graph:
+    def get_dag_entity(self, entity: EntityRef) -> ig.Graph:
         """Build a subgraph for a specific entity.
 
         Builds the total graph and extracts the subgraph related to a specific entity,
@@ -431,10 +501,10 @@ class DagGenerator:
         """
         dag = self.get_dag_total()
         # Extract graph for relevant entity
-        vx_model = dag.vs.select(CodeModel_eq=code_model)
-        vx_entity = vx_model.select(Code_eq=code_entity)
-        vs_entity_graph = dag.subcomponent(vx_entity[0], mode="in") + dag.subcomponent(
-            vx_entity[0], mode="out"
+        id_entity = self.get_entity_id(entity)
+        vx_entity = dag.vs.select(name=id_entity)[0]
+        vs_entity_graph = dag.subcomponent(vx_entity, mode="in") + dag.subcomponent(
+            vx_entity, mode="out"
         )
         vs_delete = [i for i in dag.vs.indices if i not in vs_entity_graph]
         dag.delete_vertices(vs_delete)

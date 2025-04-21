@@ -93,7 +93,7 @@ FILE_RETW ||--o{ ENTITY: "Created: FILE_ENTITY"
 
 In a Power Designer document (and the corresponding RETW file), all objects are identified by their 'Id' attribute which for example looks like 'o123'. This Id is internal to a document, but is not suitable for identification when we combine the RETW results of multiple Power Designer documents. For this purpose new identifiers must be created so we have no conflicting identifiers across Power Designer documents, but also maintain integrity where the target entity of one document, might serve as a source entity for a mapping in another Power Designer document. How do is this achieved?
 
-* We assume mappings are unique across Power Designer documents. To build a mapping identifier a hash is applied to the combination of the RETW filename and the mapping object ID.
+* We assume mappings are unique across Power Designer documents. To build a mapping identifier a hash is applied to the combination of the RETW filename and the mapping object code.
 * To maintain consistency identification of entities across Power Designer documents a hash is applied to the combination of the Code and CodeModel properties of an entity.
 
 ### Classes and uses
@@ -112,6 +112,14 @@ classDiagram
   DagGenerator *-- EdgeType
   DagGenerator *-- VertexType
 
+  class EntityRef{
+    CodeModel
+    CodeEntity
+  }
+  class MappingRef{
+    FileRETW
+    CodeMapping
+  }
   class VertexType{
     <<enumeration>>
     ENTITY

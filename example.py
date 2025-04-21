@@ -1,6 +1,6 @@
 import json
 
-from dag_reporting import DagReporting
+from dag_reporting import DagReporting, EntityRef, MappingRef
 from dag_etl_failure import EtlFailure
 
 if __name__ == "__main__":
@@ -25,9 +25,9 @@ if __name__ == "__main__":
     # Visualization of the total network of files, entities and mappings
     dag.plot_graph_total(file_html=f"{dir_output}all.html")
     # Visualization of a given entity's network of connected files, entities and mappings
+    entity = EntityRef("Da_Central_CL", "AggrProcedureCategory")
     dag.plot_entity_journey(
-        code_model="Da_Central_CL",
-        code_entity="AggrProcedureCategory",
+        entity=entity,
         file_html=f"{dir_output}entity_journey.html",
     )
     # Visualization of dependencies between files, based on entities they have in common
@@ -56,12 +56,15 @@ if __name__ == "__main__":
     * Sets a failed object status
     * Visualization of the total network of files, entities and mappings
     """
-    lst_id_entities_failed = ["o36", "o60"]  # Set for other examples
+    lst_entities_failed = [
+        EntityRef("Da_Central_CL", "AggrLastStatus"),
+        EntityRef("Da_Central_BOK", "AggrLastStatus"),
+    ]  # Set for other examples
     etl_simulator = EtlFailure()
     # Adding RETW files to generate complete ETL DAG
     etl_simulator.add_RETW_files(files_RETW=lst_files_RETW)
     # Set failed node
-    etl_simulator.set_pd_objects_failed(lst_id_entities_failed)
+    etl_simulator.set_entities_failed(lst_entities_failed)
     # Create fallout report file
     lst_mapping_order = etl_simulator.get_report_fallout()
     with open(f"{dir_output}dag_run_fallout.json", "w", encoding="utf-8") as file:

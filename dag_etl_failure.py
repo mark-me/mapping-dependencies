@@ -1,10 +1,9 @@
 import igraph as ig
 
-from dag_reporting import DagReporting, NoFlowError, VertexType
+from dag_reporting import DagReporting, EntityRef, MappingRef, NoFlowError, VertexType
 from log_config import logging
 
 logger = logging.getLogger(__name__)
-
 
 class EtlFailure(DagReporting):
     def __init__(self):
@@ -12,7 +11,7 @@ class EtlFailure(DagReporting):
         self.dag = ig.Graph()
         self.impact = []
 
-    def set_pd_objects_failed(self, pd_ids: list) -> None:
+    def set_entities_failed(self, entity_refs: list) -> None:
         """Sets the status of an entity (or mapping) to failed, and derives the consequences in the ETL DAG.
 
         Args:
@@ -26,12 +25,14 @@ class EtlFailure(DagReporting):
         except NoFlowError:
             logger.error("There are no mappings, so there is no ETL flow!")
             return
-        for pd_id in pd_ids:
+        for entity_ref in entity_refs:
             try:
-                vx_failed = dag.vs.find(Id=pd_id)
+                id_entity = self.get_entity_id(entity_ref)
+                vx_failed = dag.vs.select(name=id_entity)[0]
             except ValueError:
-                logger.error(f"Can't find node '{pd_id}' in ETL flow!")
-            ids_affected = dag.subcomponent(vx_failed.index, mode="out")
+                code_model, code_entity = entity_ref
+                logger.error(f"Can't find entity '{code_model}.{code_entity}' in ETL flow!")
+            ids_affected = dag.subcomponent(vx_failed, mode="out")
             ids_affected.remove(vx_failed.index)
             self.impact.append(
                 {"failed": vx_failed["name"], "affected": dag.vs(ids_affected)["name"]}
