@@ -342,6 +342,7 @@ class DagGenerator:
         """
         if "EntityTarget" not in mapping:
             logger.error(f"No target entity for mapping '{mapping['Name']}'")
+            return
         target_entity = mapping["EntityTarget"]
         id_entity = self.get_entity_id(
             EntityRef(target_entity["CodeModel"], target_entity["Code"])
