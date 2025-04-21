@@ -114,7 +114,7 @@ class DagReporting(DagGenerator):
                         Code: {node["Code"]}
                     """
         if node["type"] == VertexType.ENTITY.name:
-            node["title"] = node["title"] + f"Model: {node['CodeModel']}\n"
+            node["title"] = node["title"] + f"Model: {node['CodeModel']}\n\n"
         if (
             node["type"] == VertexType.MAPPING.name
             and "run_level" in node.attribute_names()
@@ -123,7 +123,7 @@ class DagReporting(DagGenerator):
                 node["title"]
                 + f"""
                     Run level: {str(node["run_level"])}
-                    Run level stage: {str(node["run_level_stage"])}
+                    Run level stage: {str(node["run_level_stage"])}\n
                 """
             )
 
