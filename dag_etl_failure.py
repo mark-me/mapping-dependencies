@@ -80,6 +80,17 @@ class EtlFailure(DagReporting):
         return result
 
     def plot_etl_fallout(self, file_html: str) -> None:
+        """Plots the ETL fallout graph, highlighting failed nodes and their impact.
+
+        Generates an HTML visualization of the ETL DAG, highlighting the failed entities/mappings and the downstream
+        components affected by the failure.
+
+        Args:
+            file_html (str): Path to the output HTML file.
+
+        Returns:
+            None
+        """
         dag = self.get_dag_ETL()
         dag = self._format_etl_dag(dag=dag)
         dag = self._format_failure_impact(dag=dag)
