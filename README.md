@@ -5,6 +5,7 @@ This project analyzes dependencies in an ETL (Extract, Transform, Load) process 
 It covers the following broadly:
 
 * what the [ordering of mappings](#determining-mapping-order) should be in the ETL flow, and whether the ETL flow has no closed loops (ETL-flows should be [acyclic](https://en.wikipedia.org/wiki/Directed_acyclic_graph)),
+* finding references to entities which are not defined in the processed RETW files,
 * the consequences of a failure of a step in ETL process and
 * the dependencies between RETW files for entities.
 
