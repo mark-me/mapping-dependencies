@@ -459,7 +459,7 @@ class DagGenerator:
         for run_level in run_levels:
             # Find run_level mappings and corresponding source entities
             mapping_sources = [
-                {"mapping": mapping["Id"], "sources": dag.predecessors(mapping)}
+                {"mapping": mapping["name"], "sources": dag.predecessors(mapping)}
                 for mapping in vs_mapping.select(run_level_eq=run_level)
             ]
             # Create graph of mapping conflicts (mappings that draw on the same sources)
@@ -469,7 +469,7 @@ class DagGenerator:
             # Apply them back to the DAG
             dict_level_runs |= dict(zip(graph_conflicts.vs["name"], order))
             for k, v in dict_level_runs.items():
-                dag.vs.select(Id_eq=k)["run_level_stage"] = v
+                dag.vs.select(name=k)["run_level_stage"] = v
         return dag
 
     def _dag_ETL_run_level_conflicts_graph(self, mapping_sources: dict) -> ig.Graph:
