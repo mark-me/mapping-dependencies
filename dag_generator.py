@@ -539,7 +539,7 @@ class DagGenerator:
 
         if vs_no_connections:
             dag.delete_vertices(vs_no_connections)
-            if dag is None:
+            if len(dag.vs) == 0:
                 raise NoFlowError("No mappings, so no ETL flow")
         logger.info("Build graph mappings")
         return dag
