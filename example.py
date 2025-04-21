@@ -27,7 +27,7 @@ if __name__ == "__main__":
     # Visualization of a given entity's network of connected files, entities and mappings
     dag.plot_entity_journey(
         code_model="Da_Central_CL",
-        code_entity="DmsProcedure",
+        code_entity="AggrProcedureCategory",
         file_html=f"{dir_output}entity_journey.html",
     )
     # Visualization of dependencies between files, based on entities they have in common
