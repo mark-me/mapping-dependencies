@@ -1,4 +1,5 @@
 import os
+from collections import deque
 from enum import Enum, auto
 from pathlib import Path
 
@@ -210,15 +211,13 @@ class DagReporting(DagGenerator):
 
         # Calculating levels
         # FIXME: Iterates through nodes that have multiple incoming connections multiple times
-        id_vertices = [(vtx, 0) for vtx in dag.vs.select(qty_predecessors_eq=1).indices]
-        qty_vertices = len(id_vertices)
-        while qty_vertices > 0:
-            id_vx, level = id_vertices.pop(0)
+        id_vertices = deque([(vtx, 0) for vtx in dag.vs.select(qty_predecessors_eq=1).indices])
+        while id_vertices:
+            id_vx, level = id_vertices.popleft()
             dag.vs[id_vx]["level"] = level
             id_vertices.extend(
                 [(vtx, level + 1) for vtx in dag.neighbors(id_vx, mode="out")]
             )
-            qty_vertices = len(id_vertices)
         return dag
 
     def _dag_node_position_category(self, dag: ig.Graph) -> ig.Graph:
@@ -398,7 +397,7 @@ class DagReporting(DagGenerator):
             if node["type"] == VertexType.MAPPING.name:
                 dict_mapping = {
                     key: node[key]
-                    for key in {key: node[key] for key in node.attribute_names()}
+                    for key in node.attribute_names()
                 }
                 dict_mapping["RunLevel"] = node["run_level"]
                 dict_mapping["RunLevelStage"] = node["run_level_stage"]
