@@ -349,11 +349,13 @@ class DagGenerator:
             dict_vertices |= {vx_file["name"]: vx_file.attributes()}
             vs_mappings = [vs for vs in dag.vs(dag.successors(vx_file)) if vs["type"] == VertexType.MAPPING.name]
 
+            # Mappings can have source entities that are defined in another RETW file
             for vx_mapping in vs_mappings:
-                id_first_order = dag.neighborhood(vx_mapping, mode="in")
-                id_first_order.remove(vx_mapping.index)
-                vs_source_entities = [vx for vx in dag.vs(id_first_order) if vx["type"] == VertexType.ENTITY.name]
+                # Get source entities
+                vs_first_order = dag.vs(dag.neighborhood(vx_mapping, mode="in"))
+                vs_source_entities = [vx for vx in vs_first_order if vx["type"] == VertexType.ENTITY.name]
 
+                # Find RETW files connected to source entities other than the file in vx_file
                 for vx_source_entity in vs_source_entities:
                     vx_file_source = [
                         vx
@@ -370,22 +372,16 @@ class DagGenerator:
                         dict_vertices |= {vx_source_entity["name"]: vx_source_entity.attributes()}
                         lst_edges.extend(
                             (
-                                {
-                                    "source": vx_file_source["name"],
-                                    "target": vx_source_entity["name"],
-                                },
-                                {
-                                    "source": vx_source_entity["name"],
-                                    "target": vx_file["name"],
-                                },
+                                {"source": vx_file_source["name"], "target": vx_source_entity["name"]},
+                                {"source": vx_source_entity["name"], "target": vx_file["name"]}
                             )
                         )
                     else:
+                        # Make connection between files
                         lst_edges.append({"source": vx_file_source["name"], "target": vx_file["name"]})
 
-
-        lst_vertices = list(dict_vertices.values())
-        return ig.Graph.DictList(vertices=lst_vertices, edges=lst_edges, directed=True)
+        dag_dependencies = ig.Graph.DictList(vertices=list(dict_vertices.values()), edges=lst_edges, directed=True)
+        return dag_dependencies
 
     def get_dag_entity(self, code_model: str, code_entity: str) -> ig.Graph:
         """Build a subgraph for a specific entity.
