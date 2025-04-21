@@ -237,6 +237,8 @@ class DagGenerator:
             return
         for source in mapping["SourceComposition"]:
             source_entity = source["Entity"]
+            if "Stereotype" in source_entity and source_entity["Stereotype"] == "mdde_FilterBusinessRule":
+                continue
             id_entity = hash(source_entity["CodeModel"] + source_entity["Code"])
             entity = {
                 id_entity: {
