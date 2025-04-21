@@ -12,7 +12,6 @@ if __name__ == "__main__":
         "output/Usecase_Aangifte_Behandeling.json",
         "output/Usecase_Test_BOK.json",
         "output/DMS_LDM_AZURE_SL.json",
-
     ]
     dag = DagReporting()
     dag.add_RETW_files(files_RETW=lst_files_RETW)
@@ -32,7 +31,9 @@ if __name__ == "__main__":
         file_html=f"{dir_output}entity_journey.html",
     )
     # Visualization of dependencies between files, based on entities they have in common
-    dag.plot_file_dependencies(file_html=f"{dir_output}file_dependencies.html")
+    dag.plot_file_dependencies(
+        file_html=f"{dir_output}file_dependencies.html", include_entities=True
+    )
     # Entities which are used in mappings, but are not defined in a Power Designer document
     lst_entities = dag.get_entities_without_definition()
     with open(f"{dir_output}entities_not_defined.jsonl", "w", encoding="utf-8") as file:
@@ -55,7 +56,7 @@ if __name__ == "__main__":
     * Sets a failed object status
     * Visualization of the total network of files, entities and mappings
     """
-    lst_id_entities_failed = ["o36", "o60"] # Set for other examples
+    lst_id_entities_failed = ["o36", "o60"]  # Set for other examples
     etl_simulator = EtlFailure()
     # Adding RETW files to generate complete ETL DAG
     etl_simulator.add_RETW_files(files_RETW=lst_files_RETW)
