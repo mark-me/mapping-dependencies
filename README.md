@@ -131,7 +131,7 @@ classDiagram
     +add_RETW_file(str file_RETW)
     +get_dag_total()
     +get_dag_single_retw_file(str file_RETW)
-    +get_dag_file_dependencies()
+    +get_dag_file_dependencies(bool include_entities)
     +get_dag_entity(str code_model, str code_entity)
     +get_dag_ETL()
   }
@@ -139,7 +139,7 @@ classDiagram
     +get_mapping_order() list
     +plot_graph_total(str file_html)
     +plot_graph_retw_file(str file_retw, str file_html)
-    +plot_file_dependencies(str file_html)
+    +plot_file_dependencies(str file_html, bool include_entities)
     +plot_entity_journey(str code_model, str code_entity, str file_html)
     +plot_etl_dag(str file_html)
   }
