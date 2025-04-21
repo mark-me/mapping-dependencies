@@ -329,6 +329,17 @@ class DagGenerator:
         return dag
 
     def get_dag_file_dependencies(self, include_entities: bool=True) -> ig.Graph:
+        """Build a graph of dependencies between RETW files based on entity usage.
+
+        Constructs a graph showing dependencies between RETW files based on shared entities.
+        The graph includes files as vertices and dependencies as edges. Optionally includes entities in the graph.
+
+        Args:
+            include_entities (bool, optional): Whether to include entities in the graph. Defaults to True.
+
+        Returns:
+            ig.Graph: The graph of file dependencies.
+        """
         dag = self.get_dag_total()
         vs_files = dag.vs.select(type_eq=VertexType.FILE_RETW.name)
         dict_vertices = {}
@@ -375,8 +386,6 @@ class DagGenerator:
 
         lst_vertices = list(dict_vertices.values())
         return ig.Graph.DictList(vertices=lst_vertices, edges=lst_edges, directed=True)
-
-
 
     def get_dag_entity(self, code_model: str, code_entity: str) -> ig.Graph:
         """Build a subgraph for a specific entity.
