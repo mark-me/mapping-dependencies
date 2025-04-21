@@ -56,7 +56,7 @@ class EtlFailure(DagReporting):
         """Retrieves dictionary reporting on the affected ETL components
 
         Returns:
-            dict: Report on mappings and entities that failed or are affected by the failure
+            list: Report on mappings and entities that failed or are affected by the failure
         """
         result = []
         dag = self.get_dag_ETL()

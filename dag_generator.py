@@ -413,14 +413,14 @@ class DagGenerator:
         return dag
 
     def _dag_ETL_run_order(self, dag: ig.Graph) -> ig.Graph:
-        """Erich the DAG with the sequence the mappings should run in
+        """Enrich the DAG with the sequence the mappings should run in
 
         Args:
             dag (ig.Graph): DAG that describes entities and mappings
 
         Returns:
             ig.Graph: DAG where the vertices are enriched with the attribute 'run_level',
-            entity vertices get the value -1
+            entity vertices get the value -1, because run order is invalid for entities.
         """
         # For each node calculate the number of mapping nodes before the current node
         lst_mapping_order = [
