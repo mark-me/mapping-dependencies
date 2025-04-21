@@ -1,6 +1,8 @@
 # Mapping dependency parser
 
-Builds insights in the network of entities and mappings, by using RETW output files, to determine:
+This project analyzes dependencies in an ETL (Extract, Transform, Load) process defined by RETW files. It helps determine the optimal execution order of mappings, identifies potential failures, and visualizes the dependencies between entities and files. The core functionality revolves around building a directed acyclic graph (DAG) representing the ETL flow.
+
+It covers the following broadly:
 
 * what the [ordering of mappings](#determining-mapping-order) should be in the ETL flow, and whether the ETL flow has no closed loops (ETL-flows should be [acyclic](https://en.wikipedia.org/wiki/Directed_acyclic_graph)),
 * the consequences of a failure of a step in ETL process and
@@ -96,7 +98,21 @@ In a Power Designer document (and the corresponding RETW file), all objects are 
 * We assume mappings are unique across Power Designer documents. To build a mapping identifier a hash is applied to the combination of the RETW filename and the mapping object code.
 * To maintain consistency identification of entities across Power Designer documents a hash is applied to the combination of the Code and CodeModel properties of an entity.
 
-### Classes and uses
+### Key components
+
+* **```DagGenerator```**: This class is the foundation of the project. It parses RETW files, extracts entities and mappings, and constructs the DAG. Key methods include ```add_RETW_file``` (adds a single RETW file), ```get_dag_total``` (returns the overall DAG), ```get_dag_ETL``` (returns the ETL flow DAG), and methods for retrieving specific subgraphs.
+
+* **```DagReporting```**: This class leverages the DAG created by ```DagGenerator``` to provide insights and visualizations. It offers methods like ```get_mapping_order``` (determines the execution order), ```plot_graph_total``` (visualizes the entire DAG), ```plot_etl_dag``` (visualizes the ETL flow), and methods for visualizing dependencies and entity relationships.
+
+* **```EtlFailure```**: This class simulates and analyzes the impact of ETL job failures. It uses set_pd_objects_failed to specify failing components and ```get_report_fallout``` and ```plot_etl_fallout``` to report and visualize the consequences.
+
+* **```EntityRef```** and **```MappingRef```**: These namedtuples represent entities and mappings, respectively, providing a structured way to reference them within the DAG.
+
+* **```VertexType```** and **```EdgeType```**: These enums define the types of nodes and edges in the DAG, improving code clarity and maintainability.
+
+The project uses a graph-based approach to represent and analyze ETL dependencies, providing valuable insights for understanding and optimizing the ETL process. The ```DagGenerator``` builds the DAG, ```DagReporting``` provides analysis and visualization, and ```EtlFailure``` simulates failure scenarios.
+
+### Classes diagram
 
 In this section I describe the classes, what they are used for and how they fit together.
 
