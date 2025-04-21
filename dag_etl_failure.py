@@ -12,10 +12,16 @@ class EtlFailure(DagReporting):
         self.impact = []
 
     def set_entities_failed(self, entity_refs: list) -> None:
-        """Sets the status of an entity (or mapping) to failed, and derives the consequences in the ETL DAG.
+        """Sets the specified entities as failed in the ETL DAG.
+
+        Marks the given entities as failed and identifies all downstream components affected by these failures.
+        The impact of the failures (failed entity/mapping and affected components) is stored for reporting and visualization.
 
         Args:
-            id (str): The 'o' identifier of an object
+            entity_refs (list): A list of EntityRef tuples, each representing a failed entity.
+
+        Returns:
+            None
         """
         try:
             dag = self.get_dag_ETL()
@@ -29,6 +35,7 @@ class EtlFailure(DagReporting):
             except ValueError:
                 code_model, code_entity = entity_ref
                 logger.error(f"Can't find entity '{code_model}.{code_entity}' in ETL flow!")
+                continue
             ids_affected = dag.subcomponent(vx_failed, mode="out")
             ids_affected.remove(vx_failed.index)
             self.impact.append(
