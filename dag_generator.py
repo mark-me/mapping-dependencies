@@ -157,6 +157,10 @@ class DagGenerator:
                     "IdModel": model["Id"],
                     "NameModel": model["Name"],
                     "CodeModel": model["Code"],
+                    "CreationDate": entity["CreationDate"],
+                    "Creator": entity["Creator"],
+                    "ModificationDate": entity["ModificationDate"],
+                    "Modifier": entity["Modifier"],
                 }
             }
             self.entities.update(dict_entity)
@@ -164,10 +168,6 @@ class DagGenerator:
                 "source": id_file,
                 "target": id_entity,
                 "type": EdgeType.FILE_ENTITY.name,
-                "CreationDate": entity["CreationDate"],
-                "Creator": entity["Creator"],
-                "ModificationDate": entity["ModificationDate"],
-                "Modifier": entity["Modifier"],
             }
             self.edges.append(edge_entity_file)
 
@@ -245,7 +245,8 @@ class DagGenerator:
                     "CodeModel": source_entity["CodeModel"],
                 }
             }
-            self.entities.update(entity)
+            if id_entity not in self.entities:
+                self.entities.update(entity)
             edge_entity_mapping = {
                 "source": id_entity,
                 "target": id_mapping,
@@ -280,7 +281,8 @@ class DagGenerator:
                 "CodeModel": target_entity["CodeModel"],
             }
         }
-        self.entities.update(entity)
+        if id_entity not in self.entities:
+            self.entities.update(entity)
         edge_entity_mapping = {
             "source": id_mapping,
             "target": id_entity,
