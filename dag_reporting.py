@@ -389,7 +389,7 @@ class DagReporting(DagGenerator):
             logger.error(
                 "There are no mappings, so there is no mapping order to generate!"
             )
-            return
+            return []
         for node in dag.vs:
             if node["type"] == VertexType.MAPPING.name:
                 dict_mapping = {key: node[key] for key in node.attribute_names()}
