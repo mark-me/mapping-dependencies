@@ -326,7 +326,7 @@ class DagReporting(DagGenerator):
         logger.info(
             f"Creating a network plot, '{file_html}', showing RETW file dependencies"
         )
-        dag_files = self.get_dag_file_entity_dependencies(include_entities=include_entities)
+        dag_files = self.get_dag_file_dependencies(include_entities=include_entities)
         dag_files = self._set_visual_attributes(dag=dag_files)
         self.plot_graph_html(dag=dag_files, file_html=file_html)
 
