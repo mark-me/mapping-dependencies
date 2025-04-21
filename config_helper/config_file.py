@@ -28,7 +28,7 @@ class ConfigFile:
 
         colors = ["grey62", "steel_blue3", "dark_orange", "red"]
         self._defaults = {
-            "level_colors": dict(zip(self._dir_pd_documents, colors)),
+            "level_colors": dict(zip(["DEBUG", "INFO", "WARNING", "ERROR"], colors)),
             "export":{
                 "level_excludes": ["DEBUG", "INFO"],
                 "col_excludes": [],
@@ -90,7 +90,7 @@ class ConfigFile:
                 self._data[setting] = self._defaults[setting]
             else:
                 self._data[section][setting] = self._defaults[setting]
-        elif any(level not in self._data[setting] for level in self._dir_pd_documents):
+        elif any(level not in self._data[setting] for level in self._defaults[setting].keys()):
             levels_missing = [
                 level
                 for level in self._defaults[setting].keys()
