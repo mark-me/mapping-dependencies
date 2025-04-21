@@ -157,6 +157,10 @@ class DagGenerator:
                     "IdModel": model["Id"],
                     "NameModel": model["Name"],
                     "CodeModel": model["Code"],
+                    "CreationDate": entity["CreationDate"],
+                    "Creator": entity["Creator"],
+                    "ModificationDate": entity["ModificationDate"],
+                    "Modifier": entity["Modifier"],
                 }
             }
             self.entities.update(dict_entity)
@@ -164,10 +168,6 @@ class DagGenerator:
                 "source": id_file,
                 "target": id_entity,
                 "type": EdgeType.FILE_ENTITY.name,
-                "CreationDate": entity["CreationDate"],
-                "Creator": entity["Creator"],
-                "ModificationDate": entity["ModificationDate"],
-                "Modifier": entity["Modifier"],
             }
             self.edges.append(edge_entity_file)
 
@@ -245,7 +245,8 @@ class DagGenerator:
                     "CodeModel": source_entity["CodeModel"],
                 }
             }
-            self.entities.update(entity)
+            if id_entity not in self.entities:
+                self.entities.update(entity)
             edge_entity_mapping = {
                 "source": id_entity,
                 "target": id_mapping,
@@ -280,7 +281,8 @@ class DagGenerator:
                 "CodeModel": target_entity["CodeModel"],
             }
         }
-        self.entities.update(entity)
+        if id_entity not in self.entities:
+            self.entities.update(entity)
         edge_entity_mapping = {
             "source": id_mapping,
             "target": id_entity,
@@ -328,76 +330,60 @@ class DagGenerator:
         dag.delete_vertices(vx_delete)
         return dag
 
-    def _get_file_dependencies_for_mapping(
-        self, dag: ig.Graph, vx_mapping: int, vx_file_index: int
-    ) -> list:
-        """Get file dependencies for a specific mapping.
+    def get_dag_file_dependencies(self, include_entities: bool=True) -> ig.Graph:
+        """Build a graph of dependencies between RETW files based on entity usage.
 
-        Helper function to extract file dependencies for a given mapping.
+        Constructs a graph showing dependencies between RETW files based on shared entities.
+        The graph includes files as vertices and dependencies as edges. Optionally includes entities in the graph.
 
         Args:
-            graph (ig.Graph): The graph to analyze.
-            vx_mapping (int): The index of the mapping vertex.
-            vx_file_index (int): The index of the current file vertex.
+            include_entities (bool, optional): Whether to include entities in the graph. Defaults to True.
 
         Returns:
-            list: A list of tuples representing file dependencies (source_file, target_file).
-        """
-        # Always look two nodes back, to see if a source entity is created in another file
-        vs_predecessors = dag.neighborhood(vx_mapping, mode="in", order=2)
-        # Only keep file nodes
-        vs_preceeding_files = [
-            vs.index
-            for vs in dag.vs.select(vs_predecessors)
-            if vs["type"] == VertexType.FILE_RETW.name
-        ]
-        # Remove file that is being looked into
-        vs_preceeding_files.remove(vx_file_index)
-        # Get file node id's of the dependencies
-        vs_preceeding_files = [
-            (vs["name"], dag.vs[vx_file_index]["name"])
-            for vs in dag.vs.select(vs_preceeding_files)
-        ]
-        return vs_preceeding_files
-
-    def get_dag_file_dependencies(self) -> ig.Graph:
-        """Build a graph of dependencies between RETW files.
-
-        Constructs a graph where nodes represent RETW files and edges represent dependencies
-        based on shared entities in mappings. Dependencies are determined by analyzing the source
-        and target entities of mappings within each file.
-
-        Returns:
-            ig.Graph: The graph representing file dependencies.
+            ig.Graph: The graph of file dependencies.
         """
         dag = self.get_dag_total()
         vs_files = dag.vs.select(type_eq=VertexType.FILE_RETW.name)
-        lst_edges_files = []
+        dict_vertices = {}
+        lst_edges = []
+
         for vx_file in vs_files:
-            # Get mappings created in the file
-            vs_objects = dag.successors(vx_file)
-            vs_mappings = [
-                vs.index
-                for vs in dag.vs.select(vs_objects)
-                if vs["type"] == VertexType.MAPPING.name
-            ]
-            # For each of the mappings
+            dict_vertices |= {vx_file["name"]: vx_file.attributes()}
+            vs_mappings = [vs for vs in dag.vs(dag.successors(vx_file)) if vs["type"] == VertexType.MAPPING.name]
+
+            # Mappings can have source entities that are defined in another RETW file
             for vx_mapping in vs_mappings:
-                # Create edges between files if dependencies are found
-                edges_file = self._get_file_dependencies_for_mapping(
-                    dag, vx_mapping, vx_file.index
-                )
-                lst_edges_files.extend(edges_file)
-        # Make unique edges between files
-        lst_edges_files = [
-            {"source": file_from, "target": file_to}
-            for file_from, file_to in list(set(lst_edges_files))
-        ]
-        lst_files = list(self.files_RETW.values())
-        dag = ig.Graph.DictList(
-            vertices=lst_files, edges=lst_edges_files, directed=True
-        )
-        return dag
+                # Get source entities
+                vs_first_order = dag.vs(dag.neighborhood(vx_mapping, mode="in"))
+                vs_source_entities = [vx for vx in vs_first_order if vx["type"] == VertexType.ENTITY.name]
+
+                # Find RETW files connected to source entities other than the file in vx_file
+                for vx_source_entity in vs_source_entities:
+                    vx_file_source = [
+                        vx
+                        for vx in dag.vs(dag.neighborhood(vx_source_entity.index, mode="in"))
+                        if vx["type"] == VertexType.FILE_RETW.name and vx["name"] != vx_file["name"]
+                    ]
+                    if not vx_file_source:
+                        continue
+
+                    vx_file_source = vx_file_source[0]
+                    dict_vertices |= {vx_file_source["name"]: vx_file_source.attributes()}
+
+                    if include_entities:
+                        dict_vertices |= {vx_source_entity["name"]: vx_source_entity.attributes()}
+                        lst_edges.extend(
+                            (
+                                {"source": vx_file_source["name"], "target": vx_source_entity["name"]},
+                                {"source": vx_source_entity["name"], "target": vx_file["name"]}
+                            )
+                        )
+                    else:
+                        # Make connection between files
+                        lst_edges.append({"source": vx_file_source["name"], "target": vx_file["name"]})
+
+        dag_dependencies = ig.Graph.DictList(vertices=list(dict_vertices.values()), edges=lst_edges, directed=True)
+        return dag_dependencies
 
     def get_dag_entity(self, code_model: str, code_entity: str) -> ig.Graph:
         """Build a subgraph for a specific entity.
