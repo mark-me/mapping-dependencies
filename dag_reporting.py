@@ -112,7 +112,6 @@ class DagReporting(DagGenerator):
         if node["type"] in [VertexType.MAPPING.name, VertexType.ENTITY.name]:
             node["title"] = f"""Name: {node["Name"]}
                         Code: {node["Code"]}
-                        Id: {node["Id"]}
                     """
         if node["type"] == VertexType.ENTITY.name:
             node["title"] = node["title"] + f"Model: {node['CodeModel']}\n"
