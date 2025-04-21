@@ -329,6 +329,25 @@ class DagReporting(DagGenerator):
         dag_files = self._set_visual_attributes(dag=dag_files)
         self.plot_graph_html(dag=dag_files, file_html=file_html)
 
+    def plot_file_entity_dependencies(self, file_html: str) -> None:
+        """Plot the dependencies between RETW files.
+
+        Generates and visualizes a graph showing dependencies between RETW files based on shared objects.
+        The visualization is saved to an HTML file.
+
+        Args:
+            file_html (str): Path to the output HTML file.
+
+        Returns:
+            None
+        """
+        logger.info(
+            f"Creating a network plot, '{file_html}', showing RETW file dependencies"
+        )
+        dag_files = self.get_dag_file_entity_dependencies()
+        dag_files = self._set_visual_attributes(dag=dag_files)
+        self.plot_graph_html(dag=dag_files, file_html=file_html)
+
     def plot_entity_journey(
         self, code_model: str, code_entity: str, file_html: str
     ) -> None:

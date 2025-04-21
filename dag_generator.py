@@ -399,6 +399,58 @@ class DagGenerator:
         )
         return dag
 
+    def get_dag_file_entity_dependencies(self) -> ig.Graph:
+        dag = self.get_dag_total()
+        vs_files = dag.vs.select(type_eq=VertexType.FILE_RETW.name)
+        dict_vertices = {}
+        lst_edges = []
+        for vx_file in vs_files:
+            dict_vertices |= {vx_file["name"]: vx_file.attributes()}
+            # Get mappings created in the file
+            vs_objects = dag.vs(dag.successors(vx_file))
+            vs_mappings = [
+                vs for vs in vs_objects if vs["type"] == VertexType.MAPPING.name
+            ]
+            # For each of the mappings
+            for vx_mapping in vs_mappings:
+                # Check first order incoming,
+                id_first_order = dag.neighborhood(vx_mapping, mode="in")
+                id_first_order.remove(vx_mapping.index)
+                vs_source_entities = [
+                    vx
+                    for vx in dag.vs(id_first_order)
+                    if vx["type"] == VertexType.ENTITY.name
+                ]
+                for vx_source_entity in vs_source_entities:
+                    vs_file_source = [
+                        vx
+                        for vx in dag.vs(
+                            dag.neighborhood(vx_source_entity.index, mode="in")
+                        )
+                        if vx["type"] == VertexType.FILE_RETW.name and vx["name"] != vx_file["name"]
+                    ]
+                    if len(vs_file_source) > 0:
+                        dict_vertices |= {vx_source_entity["name"]: vx_source_entity.attributes()}
+                        dict_vertices |= {vx["name"]: vx.attributes() for vx in vs_file_source}
+                        lst_edges.extend(
+                            [
+                                {
+                                    "source": vx["name"],
+                                    "target": vx_source_entity["name"],
+                                }
+                                for vx in vs_file_source
+                                if vx["name"] != vx_file["name"]
+                            ]
+                        )
+                        lst_edges.append({"source": vx_source_entity["name"], "target":vx_file["name"]})
+        # Deduplicate vertices
+        lst_vertices = dict_vertices.values()
+        dag_dependencies = ig.Graph.DictList(
+            vertices=lst_vertices, edges=lst_edges, directed=True
+        )
+        return dag_dependencies
+
+
     def get_dag_entity(self, code_model: str, code_entity: str) -> ig.Graph:
         """Build a subgraph for a specific entity.
 
