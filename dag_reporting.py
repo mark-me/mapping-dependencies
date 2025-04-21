@@ -404,6 +404,18 @@ class DagReporting(DagGenerator):
         return lst_mappings
 
     def _dag_etl_coloring(self, dag: ig.Graph) -> ig.Graph:
+        """Helper function to color nodes in the ETL DAG based on their type and model.
+
+        Assigns colors to the nodes in the ETL DAG for visualization purposes.
+        Mappings are colored based on their type, entities are colored based on their model,
+        and other nodes are colored based on their position (start, intermediate, end).
+
+        Args:
+            dag (ig.Graph): The ETL DAG to color.
+
+        Returns:
+            ig.Graph: The colored ETL DAG.
+        """
         # Build model colouring dictionary
         colors_model = {
             model: self.colors_discrete[i]
@@ -420,6 +432,24 @@ class DagReporting(DagGenerator):
                 vx["color"] = self.color_node_position[vx["position"]]
         return dag
 
+    def _format_etl_dag(self, dag: ig.Graph) -> ig.Graph:
+        """Format the ETL DAG for visualization.
+
+        Prepares the ETL DAG for visualization by calculating node levels, setting node hierarchy levels,
+        setting visual attributes, and coloring the nodes.
+
+        Args:
+            dag (ig.Graph): The ETL DAG to format.
+
+        Returns:
+            ig.Graph: The formatted ETL DAG.
+        """
+        dag = self._calculate_node_levels(dag=dag)
+        dag = self._dag_node_hierarchy_level(dag=dag)
+        dag = self._set_visual_attributes(dag=dag)
+        dag = self._dag_etl_coloring(dag=dag)
+        return dag
+
     def plot_etl_dag(self, file_html: str) -> None:
         """Create a html file with a graphical representation of the ETL DAG
 
@@ -431,9 +461,5 @@ class DagReporting(DagGenerator):
         except NoFlowError:
             logger.error("There are no mappings, so there is no ETL flow to plot!")
             return
-        # dag = self._dag_node_position_category(dag=dag)
-        dag = self._calculate_node_levels(dag=dag)
-        dag = self._dag_node_hierarchy_level(dag=dag)
-        dag = self._set_visual_attributes(dag=dag)
-        dag = self._dag_etl_coloring(dag=dag)
+        dag = self._format_etl_dag(dag=dag)
         self.plot_graph_html(dag=dag, file_html=file_html)

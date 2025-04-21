@@ -81,9 +81,6 @@ class EtlFailure(DagReporting):
 
     def plot_etl_fallout(self, file_html: str) -> None:
         dag = self.get_dag_ETL()
-        dag = self._calculate_node_levels(dag=dag)
-        dag = self._dag_node_hierarchy_level(dag=dag)
-        dag = self._set_visual_attributes(dag=dag)
-        dag = self._dag_etl_coloring(dag=dag)
+        dag = self._format_etl_dag(dag=dag)
         dag = self._format_failure_impact(dag=dag)
         self.plot_graph_html(dag=dag, file_html=file_html)
