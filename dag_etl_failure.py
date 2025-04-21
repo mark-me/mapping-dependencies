@@ -16,9 +16,6 @@ class EtlFailure(DagReporting):
 
         Args:
             id (str): The 'o' identifier of an object
-
-        Returns:
-            nx.DiGraph: A networkx graph with the failure and it's consequences.
         """
         try:
             dag = self.get_dag_ETL()
