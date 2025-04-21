@@ -95,6 +95,9 @@ class DagGenerator:
         except FileNotFoundError:
             logger.error(f"Could not find file '{file_RETW}'")
             return False
+        except json.JSONDecodeError:
+            logger.error(f"Invalid JSON content in file '{file_RETW}'")
+            return False
 
         # Add file node information
         order_added = len(self.files_RETW)
