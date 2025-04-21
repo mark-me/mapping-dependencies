@@ -7,7 +7,7 @@ import igraph as ig
 import networkx as nx
 from pyvis.network import Network
 
-from dag_generator import DagGenerator, EntityRef, MappingRef, NoFlowError, VertexType
+from dag_generator import DagGenerator, EntityRef, NoFlowError, VertexType
 from log_config import logging
 
 logger = logging.getLogger(__name__)

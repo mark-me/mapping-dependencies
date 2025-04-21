@@ -1,6 +1,6 @@
 import json
 
-from dag_reporting import DagReporting, EntityRef, MappingRef
+from dag_reporting import DagReporting, EntityRef
 from dag_etl_failure import EtlFailure
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 import igraph as ig
 
-from dag_reporting import DagReporting, EntityRef, MappingRef, NoFlowError, VertexType
+from dag_reporting import DagReporting, NoFlowError, VertexType
 from log_config import logging
 
 logger = logging.getLogger(__name__)
