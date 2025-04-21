@@ -61,9 +61,9 @@ class DagReporting(DagGenerator):
             VertexType.ERROR.name: "star",
         }
         self.node_type_color = {
-            VertexType.ENTITY.name: "gold",
-            VertexType.FILE_RETW.name: "silver",
-            VertexType.MAPPING.name: "slateblue",
+            VertexType.ENTITY.name: "#fbed8f",
+            VertexType.FILE_RETW.name: "#73c4e5",
+            VertexType.MAPPING.name: "#8962ad",
             VertexType.ERROR.name: "red",
         }
 
@@ -211,7 +211,9 @@ class DagReporting(DagGenerator):
 
         # Calculating levels
         # FIXME: Iterates through nodes that have multiple incoming connections multiple times
-        id_vertices = deque([(vtx, 0) for vtx in dag.vs.select(qty_predecessors_eq=1).indices])
+        id_vertices = deque(
+            [(vtx, 0) for vtx in dag.vs.select(qty_predecessors_eq=1).indices]
+        )
         while id_vertices:
             id_vx, level = id_vertices.popleft()
             dag.vs[id_vx]["level"] = level
@@ -309,7 +311,9 @@ class DagReporting(DagGenerator):
         dag = self._set_visual_attributes(dag=dag)
         self.plot_graph_html(dag=dag, file_html=file_html)
 
-    def plot_file_dependencies(self, file_html: str, include_entities: bool=True) -> None:
+    def plot_file_dependencies(
+        self, file_html: str, include_entities: bool = True
+    ) -> None:
         """Plot the dependencies between RETW files.
 
         Generates and visualizes a graph showing dependencies between RETW files,
@@ -356,7 +360,7 @@ class DagReporting(DagGenerator):
         # Recolor requested entity
         vx_model = dag.vs.select(CodeModel_eq=code_model)
         vx_entity = vx_model.select(Code_eq=code_entity)
-        dag.vs[vx_entity.indices[0]]["color"] = "lightseagreen"
+        dag.vs[vx_entity.indices[0]]["color"] = "#f296bf"
         self.plot_graph_html(dag=dag, file_html=file_html)
 
     def get_entities_without_definition(self) -> list:
@@ -395,10 +399,7 @@ class DagReporting(DagGenerator):
             return
         for node in dag.vs:
             if node["type"] == VertexType.MAPPING.name:
-                dict_mapping = {
-                    key: node[key]
-                    for key in node.attribute_names()
-                }
+                dict_mapping = {key: node[key] for key in node.attribute_names()}
                 dict_mapping["RunLevel"] = node["run_level"]
                 dict_mapping["RunLevelStage"] = node["run_level_stage"]
                 lst_mappings.append(dict_mapping)
