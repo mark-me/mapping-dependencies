@@ -111,6 +111,8 @@ classDiagram
   DagReporting <|-- EtlFailure
   DagGenerator *-- EdgeType
   DagGenerator *-- VertexType
+  EntityRef --> DagGenerator
+  MappingRef --> DagGenerator
 
   class EntityRef{
     <<namedtuple>>
