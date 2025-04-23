@@ -45,6 +45,10 @@ The logging output is JSON-formatted and includes timestamps, level, message, mo
 - Logs are printed to **stdout**
 - Logs are written to a rotating file named `log.json`
 
+### Log Rotation Configuration
+
+By default, logs are written to a rotating file named `log.json` using a RotatingFileHandler. The rotation parameters—such as maximum file size (maxBytes) and the number of backup files to keep (backupCount)—are configured with default values. These defaults can be overridden in the `logging_config.py` file, allowing you to customize the log rotation behavior to meet your requirements.
+
 ### 3. What gets tracked
 
 Only logs at level `WARNING` or higher are tracked in memory by the custom `IssueTrackingHandler`. This allows you to:
