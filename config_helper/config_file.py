@@ -3,7 +3,7 @@ import tomllib
 
 import toml
 
-from log_config import logging
+from logtools import logging
 
 logger = logging.getLogger(__name__)
 

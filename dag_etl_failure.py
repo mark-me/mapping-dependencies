@@ -1,7 +1,7 @@
 import igraph as ig
 
 from dag_reporting import DagReporting, NoFlowError, VertexType
-from log_config import get_logger
+from logtools import get_logger
 
 logger = get_logger(__name__)
 

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import igraph as ig
 
-from log_config import get_logger
+from logtools import get_logger
 
 logger = get_logger(__name__)
 

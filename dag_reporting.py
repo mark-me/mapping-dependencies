@@ -8,7 +8,7 @@ import networkx as nx
 from pyvis.network import Network
 
 from dag_generator import DagGenerator, EntityRef, NoFlowError, VertexType
-from log_config import get_logger
+from logtools import get_logger
 
 logger = get_logger(__name__)
 
