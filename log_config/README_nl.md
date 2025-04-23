@@ -22,6 +22,7 @@ logger.warning("Deze waarschuwing wordt bijgehouden.")
 
 if issue_tracker.has_issues():
     print("Problemen gevonden:", issue_tracker.get_issues())
+    issue_tracker.write_csv(file_csv="problemen.csv")
 else:
     print("Geen problemen.")
 ```
