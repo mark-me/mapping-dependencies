@@ -58,8 +58,6 @@ logtools/
 
 ## Belangrijke componenten
 
-## sBelangrijke Componenten
-
 - **`get_logger(__name__)`**
   Geeft een vooraf geconfigureerde logger terug voor de aanroepende module. Maakt logging-instellingen eenvoudig en consistent binnen de applicatie.
 
