@@ -8,10 +8,9 @@ import networkx as nx
 from pyvis.network import Network
 
 from dag_generator import DagGenerator, EntityRef, NoFlowError, VertexType
-from log_config import logging
+from log_config import get_logger
 
-logger = logging.getLogger(__name__)
-
+logger = get_logger(__name__)
 
 class ObjectPosition(Enum):
     START = auto()

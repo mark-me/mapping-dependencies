@@ -1,6 +1,3 @@
-import logging.config
-
-
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -21,13 +18,8 @@ LOGGING = {
             "formatter": "json",
             "filename": "log.json",
             "maxBytes": 204800,
-            "backupCount": 10
-        }
-
+            "backupCount": 10,
+        },
     },
     "loggers": {"": {"handlers": ["stdout", "file"], "level": "DEBUG"}},
 }
-
-
-logging.config.dictConfig(LOGGING)
-

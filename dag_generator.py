@@ -7,9 +7,9 @@ from pathlib import Path
 
 import igraph as ig
 
-from log_config import logging
+from log_config import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 EntityRef = namedtuple("EntityRef", ("CodeModel", "CodeEntity"))
 MappingRef = namedtuple("MappingRef", ("FileRETW", "CodeMapping"))

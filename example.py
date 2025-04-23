@@ -1,7 +1,10 @@
 import json
 
-from dag_reporting import DagReporting, EntityRef
 from dag_etl_failure import EtlFailure
+from dag_reporting import DagReporting, EntityRef
+from log_config import get_logger, issue_tracker
+
+logger = get_logger(__name__)
 
 if __name__ == "__main__":
     """Examples of the class use-cases

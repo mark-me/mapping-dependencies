@@ -1,9 +1,9 @@
 import igraph as ig
 
 from dag_reporting import DagReporting, NoFlowError, VertexType
-from log_config import logging
+from log_config import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 class EtlFailure(DagReporting):
     def __init__(self):
