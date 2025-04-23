@@ -1,8 +1,6 @@
 # Logtools
 
-**Gecentraliseerde logging en foutregistratie voor Python-applicaties**
-
-Dit pakket biedt een herbruikbare en uitbreidbare loggingconfiguratie, inclusief:
+Gecentraliseerde logging en foutregistratie voor Python-applicaties. Deze package biedt een herbruikbare en uitbreidbare loggingconfiguratie, inclusief:
 
 - Gecentraliseerde loggingconfiguratie (JSON-formaat)
 - Logging naar stdout én naar een roterend logbestand
