@@ -46,14 +46,14 @@ Alleen logberichten op niveau `WARNING` of hoger worden bijgehouden in het geheu
 ```md
 logtools/
 ├── __init__.py            # Publieke API: get_logger, issue_tracker
-├── logging_config.py      # Loggingconfiguratie als dict
+├── log_config.py      # Loggingconfiguratie als dict
 ├── log_manager.py         # Past configuratie toe en stelt logger + tracker beschikbaar
 └── issue_tracking.py      # Aangepaste handler die problemen bijhoudt
 ```
 
 ## Aanpassen
 
-- Je kunt `logging_config.py` aanpassen om andere formatters te gebruiken of te loggen naar extra bestemmingen (zoals syslog of externe diensten).
+- Je kunt `log_config.py` aanpassen om andere formatters te gebruiken of te loggen naar extra bestemmingen (zoals syslog of externe diensten).
 - De `IssueTrackingHandler` kan worden uitgebreid om extra context zoals tijdstempels of thread-informatie vast te leggen.
 
 ## Belangrijke componenten
@@ -64,11 +64,11 @@ logtools/
 - **`issue_tracker`**
   Biedt methoden zoals `has_issues()` en `get_issues()` om vastgelegde waarschuwingen en fouten op te vragen.
 
-- **`logging_config.py`**
+- **`log_config.py`**
   Bevat de loggingconfiguratie als een Python dictionary. Definieert het logformaat (JSON), logniveaus en uitvoerdoelen (stdout en bestand). Ontwikkelaars kunnen dit bestand aanpassen naar hun wensen.
 
 - **`log_manager.py`**
-  Past de configuratie uit `logging_config.py` toe en stelt de functies `get_logger()` en `issue_tracker` beschikbaar.
+  Past de configuratie uit `log_config.py` toe en stelt de functies `get_logger()` en `issue_tracker` beschikbaar.
 
 - **`issue_tracking.py`**
   Implementeert de `IssueTrackingHandler`, een aangepaste logging handler die waarschuwingen en fouten opslaat voor latere controle. Dit vormt de kern van de foutregistratie.
