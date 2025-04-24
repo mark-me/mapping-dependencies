@@ -6,7 +6,7 @@ import yaml
 
 from logtools import get_logger
 
-from .config_data import (
+from .config_dataclasses import (
     ConfigData,
     DevOpsConfig,
     ExtractorConfig,
