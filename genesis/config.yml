@@ -1,0 +1,33 @@
+title: "first-dry-run"
+version: 1
+
+folder_intermediate_root: "c:/Development/Genesis"
+
+power-designer:
+  folder: "PowerDesigner"
+  files:
+    - "DMS_LDM_AZURE_SL.ldm"
+    - "Usecase Aangifte Behandeling_v1.16.ldm"
+
+extractor:
+  folder: "RETW"
+
+generator:
+  folder: "c:/Development/Genesis/Generator"
+  templates_platform: "dedicated-pool"
+  created_ddls_json: "list_created_ddls.json"
+
+publisher:
+  vs_project_folder: "MDDE_Release"
+  vs_project_file: "./CentralLayer/3. Central Layer.sqlproj"
+  codeList_json: "./etl_templates/output/codeList.json"
+  codeList_folder: "./etl_templates/input/codeList/"
+  mdde_scripts_folder: "./etl_templates/src/generator/mdde_scripts/"
+
+devops:
+  organisation: "migratie-dataketen-douane"
+  project: "Douane%20Datawerkorganisatie"
+  repo: "DWO%20DataCenter"
+  branch: "collaboration"
+  work_item: "23936"
+  work_item_description: "Testen automatische uitrol DDL en ETL"
