@@ -136,6 +136,7 @@ class ConfigFile:
                 version = f"v{major:02}.{minor:02}.{patch:02}"
         folder = Path(os.path.join(folder, version))
         self._create_dir(dir_path=folder)
+        return version
 
     @property
     def dir_intermediate_root(self) -> str:
@@ -160,7 +161,6 @@ class ConfigFile:
         lst_pd_files = [
             Path(
                 os.path.join(
-                    self._data.folder_intermediate_root,
                     self._data.power_designer.folder,
                     pd_file,
                 )
