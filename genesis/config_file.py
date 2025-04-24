@@ -1,4 +1,5 @@
 import os
+from dataclasses import field, fields, is_dataclass
 from pathlib import Path
 
 import yaml
@@ -28,7 +29,6 @@ class ConfigFileError(Exception):
     def __str__(self):
         return f"{self.message} (Error Code: {self.error_code})"
 
-
 class ConfigFile:
     """Manages configuration settings from a TOML file.
 
@@ -43,15 +43,6 @@ class ConfigFile:
         and reads the configuration from the file.
         """
         self._file = Path(file_config)
-        self._expected_structure = {
-            "title": {},
-            "folder_intermediate_root": {},
-            "power-designer": {"folder": str, "files": list},
-            "extractor": {"bla": str},
-            "generator": {},
-            "publisher": {},
-            "devops": {},
-        }
         self._data: ConfigData = self._read_file()
         self._version = self._determine_version()
 
@@ -79,64 +70,33 @@ class ConfigFile:
                     f"Verplichte configuratiesleutel ontbreekt: {key}", 402
                 )
 
-        # Default substructuren
-        defaults = {
-            "power-designer": {"folder": "", "files": []},
-            "extractor": {"folder": "RETW"},
-            "generator": {
-                "folder": "",
-                "templates_platform": None,
-                "created_ddls_json": None,
-            },
-            "publisher": {
-                "vs_project_folder": "",
-                "vs_project_file": "",
-                "codeList_json": "",
-                "codeList_folder": "",
-                "mdde_scripts_folder": "",
-            },
-            "devops": {
-                "organisation": "",
-                "project": "",
-                "repo": "",
-                "branch": "",
-                "work_item": "",
-                "work_item_description": "",
-            },
-        }
-
-        for section, values in defaults.items():
-            config_raw.setdefault(section, values)
-
         config_raw["power_designer"] = config_raw.pop("power-designer")
 
-        return ConfigData(
-            title=config_raw["title"],
-            folder_intermediate_root=config_raw["folder_intermediate_root"],
-            power_designer=PowerDesignerConfig(**config_raw["power_designer"]),
-            extractor=ExtractorConfig(**config_raw["extractor"]),
-            generator=GeneratorConfig(**config_raw["generator"]),
-            publisher=PublisherConfig(**config_raw["publisher"]),
-            devops=DevOpsConfig(**config_raw["devops"]),
-        )
+        return self.fill_defaults(ConfigData, config_raw)
 
-    def _verify_dict(self, to_check: dict, keys_required: list):
-        if missing := [k for k in keys_required if k not in to_check]:
-            msg = f"Ontbrekende configuratie item(s): {', '.join(missing)}"
-            raise ConfigFileError(msg, 206)
+    def fill_defaults(self, cls, data: dict):
+        """Recursively fills default values for dataclass fields.
 
-    def _verify_file_content(self, data_file: dict) -> bool:
-        """Verify the content of the configuration file.
-
-        Checks if all required keys are present in the provided data.
-        Raises a ConfigFileError if any required keys are missing.
+        Handles nested dataclasses and populates fields with values from the provided data,
+        falling back to default values or default factories if available.
+        Raises a ConfigFileError if a required key is missing.
         """
-        required_keys = self._expected_structure.keys()
-        self._verify_dict(data_file, self._expected_structure)
-        for key in required_keys:
-            if len(data_file[key]) > 0:
-                required_keys = self._expected_structure[key].keys()
-                self._verify_dict(data_file[key], self._expected_structure)
+        init_args = {}
+        for f in fields(cls):
+            if f.name in data:
+                val = data[f.name]
+                init_args[f.name] = (
+                    self.fill_defaults(f.type, val)
+                    if is_dataclass(f.type) and isinstance(val, dict)
+                    else val
+                )
+            elif f.default != field(default=None).default:
+                init_args[f.name] = f.default
+            elif f.default_factory != field(default_factory=lambda: None).default_factory:
+                init_args[f.name] = f.default_factory()
+            else:
+                raise ConfigFileError(f"Missing required key: {f.name}", 400)
+        return cls(**init_args)
 
     def _create_dir(self, dir_path: Path) -> None:
         """Create a directory if it doesn't exist.

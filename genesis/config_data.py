@@ -7,7 +7,7 @@ class PowerDesignerConfig:
 
     Holds the folder path and a list of PowerDesigner file names.
     """
-    folder: str = ""
+    folder: str
     files: List[str] = field(default_factory=list)
 
 @dataclass
@@ -24,9 +24,9 @@ class GeneratorConfig:
 
     Specifies the output folder, platform templates, and JSON file for created DDLs.
     """
-    folder: str = ""
-    templates_platform: str = ""
-    created_ddls_json: str = ""
+    folder: str = "Generator"
+    templates_platform: str
+    created_ddls_json: str = "ddls.json"
 
 @dataclass
 class PublisherConfig:
@@ -34,11 +34,11 @@ class PublisherConfig:
 
     Specifies various paths and settings related to publishing, including Visual Studio project details, code lists, and MDDE scripts.
     """
-    vs_project_folder: str = ""
-    vs_project_file: str = ""
-    codeList_json: str = ""
-    codeList_folder: str = ""
-    mdde_scripts_folder: str = ""
+    vs_project_folder: str
+    vs_project_file: str
+    codeList_json: str
+    codeList_folder: str
+    mdde_scripts_folder: str
 
 @dataclass
 class DevOpsConfig:
@@ -46,12 +46,12 @@ class DevOpsConfig:
 
     Specifies details for DevOps integration, including organization, project, repository, branch, and work item information.
     """
-    organisation: str = ""
-    project: str = ""
-    repo: str = ""
-    branch: str = ""
-    work_item: str = ""
-    work_item_description: str = ""
+    organisation: str
+    project: str
+    repo: str
+    branch: str
+    work_item: str
+    work_item_description: str
 
 @dataclass
 class ConfigData:
@@ -61,9 +61,9 @@ class ConfigData:
     """
     title: str
     folder_intermediate_root: str
-    power_designer: PowerDesignerConfig
-    extractor: ExtractorConfig
-    generator: GeneratorConfig
-    publisher: PublisherConfig
-    devops: DevOpsConfig
+    power_designer: PowerDesignerConfig = field(default_factory=PowerDesignerConfig)
+    extractor: ExtractorConfig = field(default_factory=ExtractorConfig)
+    generator: GeneratorConfig = field(default_factory=GeneratorConfig)
+    publisher: PublisherConfig = field(default_factory=PublisherConfig)
+    devops: DevOpsConfig = field(default_factory=DevOpsConfig)
 
