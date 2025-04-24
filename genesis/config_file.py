@@ -114,7 +114,7 @@ class ConfigFile:
         Determines the version string by checking existing version folders and incrementing the patch number.
         Creates the output folder with the determined version.
         """
-        version = "v00.00.01"
+        version = "v00.01.00"
         folder = Path(
             os.path.join(
                 self._data.folder_intermediate_root,
