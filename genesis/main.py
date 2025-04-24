@@ -33,7 +33,6 @@ if __name__ == "__main__":
     lst_files_RETW = []
     file_config = Path("genesis/config.yml")
     logger.info(f"Gestart met configuratie uit '{file_config}'")
-    file_config = Path("genesis/config.yml")
     config_file = ConfigFile(file_config=file_config)
 
     dir_output = config_file.dir_RETW_output
