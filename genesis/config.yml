@@ -12,7 +12,7 @@ extractor:
   folder: "RETW"
 
 generator:
-  folder: "c:/Development/Genesis/Generator"
+  folder: "Generator"
   templates_platform: "dedicated-pool"
   created_ddls_json: "list_created_ddls.json"
 
