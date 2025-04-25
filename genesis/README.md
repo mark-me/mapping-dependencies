@@ -2,7 +2,7 @@
 
 Het Python-script, ```main.py```, dient als het startpunt voor de "Genesis" workflow-orkestrator. Het verwerkt commandoregelargumenten, leest een configuratiebestand en start het workflowproces. De voornaamste functie is het beheren en uitvoeren van de stappen die in de configuratie zijn gedefinieerd, mogelijk inclusief uitrolstappen.
 
-## Gebruik
+## 🚀 Gebruik
 
 * Zorg dat alle PowerDesigner-bestanden op de juiste locatie staan.
 * Vul een YAML-configuratiebestand in op basis van het sjabloon ([zie voorbeeld](#voorbeeld-configuratiebestand)).
