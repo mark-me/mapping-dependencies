@@ -18,17 +18,17 @@ python main.py path/to/config.yaml
 sequenceDiagram
     participant Gebruiker
     participant CLI
-    participant Orkestrator
+    participant Orchestrator
 
     Gebruiker->>CLI: Voert CLI uit met pad naar configuratiebestand
-    CLI->>CLI: Parseert argumenten (configuratiebestand, dry-run)
-    CLI->>Orkestrator: Maakt Orkestrator-object aan met configuratiebestand
-    Orkestrator->>Orkestrator: Initialiseert Orkestrator
-    Orkestrator->>Orkestrator: Laadt configuratie
-    Orkestrator->>Orkestrator: Valideert configuratie
-    Orkestrator->>Orkestrator: Zet verwerkingsomgeving op
-    Orkestrator->>Orkestrator: Start verwerking
-    Orkestrator->>CLI: Geeft resultaat terug
+    CLI->>CLI: Parseert argumenten (configuratiebestand, skip DevOps deployment)
+    CLI->>Orchestrator: Maakt Orchestrator-object aan met configuratiebestand
+    Orchestrator->>Orchestrator: Initialiseert Orkestrator
+    Orchestrator->>Orchestrator: Laadt configuratie
+    Orkestrator->>Orchestrator: Valideert configuratie
+    Orchestrator->>Orchestrator: Zet verwerkingsomgeving op
+    Orchestrator->>Orchestrator: Start verwerking
+    Orchestrator->>CLI: Geeft resultaat terug
     CLI->>Gebruiker: Toont resultaat
 ```
 
