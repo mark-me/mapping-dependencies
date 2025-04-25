@@ -5,8 +5,8 @@ folder_intermediate_root: "/home/mark/Development/mapping-dependencies/intermedi
 power-designer:
   folder: "PowerDesigner"
   files:
-    - "DMS_LDM_AZURE_SL.ldm"
-    - "Usecase Aangifte Behandeling_v1.16.ldm"
+    - "babla1.ldm"
+    - "blabla2.ldm"
 
 extractor:
   folder: "RETW"
@@ -24,9 +24,9 @@ publisher:
   mdde_scripts_folder: "./etl_templates/src/generator/mdde_scripts/"
 
 devops:
-  organisation: "migratie-dataketen-douane"
-  project: "Douane%20Datawerkorganisatie"
-  repo: "DWO%20DataCenter"
+  organisation: "migratie-dataketen"
+  project: "Datawerkorganisatie"
+  repo: "DataCenter"
   branch: "collaboration"
   work_item: "23936"
   work_item_description: "Testen automatische uitrol DDL en ETL"
