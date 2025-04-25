@@ -119,7 +119,7 @@ devops:
   work_item_description: "Beschrijving van deze automatische deployment"
 ```
 
-### Key components
+### Belangrijke componenten
 
 **```ConfigData```**: Bevat globale instellingen zoals de titel van het project en het pad naar de outputmap.
 
