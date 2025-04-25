@@ -6,13 +6,11 @@ Het Python-script, ```main.py```, dient als het startpunt voor de "Genesis" work
 
 * Zorg dat alle PowerDesigner-bestanden op de juiste locatie staan.
 * Vul een YAML-configuratiebestand in op basis van het sjabloon ([zie voorbeeld](#voorbeeld-configuratiebestand)).
-* Start het script met het pad naar het configuratiebestand:
-
-```bash
-python main.py path/to/config.yaml
-```
+* Start het script met het pad naar het configuratiebestand: ```python main.py path/to/config.yaml```
 
 ## Verwerkingsvolgorde
+
+Wanneer het main script wordt gestart worden de volgende stappen ondernomen:
 
 ```mermaid
 sequenceDiagram
@@ -35,6 +33,8 @@ sequenceDiagram
 ## Orkestrator
 
 ### Verwerkingsvolgorde van orkestrator
+
+Het orchestratorie proces doorloopt de volgende stappen:
 
 ```mermaid
 sequenceDiagram
@@ -76,7 +76,7 @@ classDiagram
     ConfigData o-- DevOpsConfig
 ```
 
-## Configuratiegegevens
+## 🔧 Configuratiegegevens
 
 De configuratie wordt opgeslagen in dataclasses die zijn afgeleid van de YAML-structuur. Deze bieden typeveiligheid en automatische validatie.
 
