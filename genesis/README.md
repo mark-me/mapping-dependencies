@@ -12,7 +12,53 @@ Het script ```main.py``` is het startpunt van de MMDE pijplijn genaamd Genesis. 
 python main.py path/to/config.yaml
 ```
 
-## Voorbeeld configuratiebestand
+## Verwerkingsvolgorde van Genesis
+
+```mermaid
+sequenceDiagram
+  participant G as Genesis
+  participant CF as Configuratiebestand
+  participant PD as PowerDesigner-bestand
+  participant E as Extractor
+  participant D as Afhankelijkheidschecker
+  participant DG as Codegenerator
+
+  G->CF: Leest configuratie
+  loop Voor elk PowerDesigner-bestand
+    G->E: extract(PD)
+    E->PD: Leest gegevens
+    E-->G: Geeft geëxtraheerde data terug
+  end
+  G->D: check_dependencies(geëxtraheerde data)
+  D->D: Controleert afhankelijkheden
+  D-->G: Retourneert eventuele problemen
+  alt Geen problemen
+    G->DG: generate_deployment(geëxtraheerde data)
+    DG->DG: Genereert uitrolcode
+  else Problemen gevonden
+    G->G: Schrijft problemen weg naar bestand
+    G->G: Stopt uitvoering
+  end
+```
+
+## Class-diagram
+
+```mermaid
+classDiagram
+    Genesis -- ConfigFile : gebruikt
+    ConfigFile -- ConfigData : bevat
+    ConfigData o-- PowerDesignerConfig
+    ConfigData o-- ExtractorConfig
+    ConfigData o-- GeneratorConfig
+    ConfigData o-- PublisherConfig
+    ConfigData o-- DevOpsConfig
+```
+
+## Configuratiegegevens
+
+De configuratie wordt opgeslagen in dataclasses die zijn afgeleid van de YAML-structuur. Deze bieden typeveiligheid en automatische validatie.
+
+### Voorbeeld configuratiebestand
 
 ```yaml
 # Titel van het project of run
@@ -73,54 +119,6 @@ devops:
   work_item_description: "Beschrijving van deze automatische deployment"
 ```
 
-## Sequence diagram for Genesis processing
-
-```mermaid
-sequenceDiagram
-  participant G as Genesis
-  participant CF as Configuratiebestand
-  participant PD as PowerDesigner-bestand
-  participant E as Extractor
-  participant D as Afhankelijkheidschecker
-  participant DG as Codegenerator
-
-  G->CF: Leest configuratie
-  loop Voor elk PowerDesigner-bestand
-    G->E: extract(PD)
-    E->PD: Leest gegevens
-    E-->G: Geeft geëxtraheerde data terug
-  end
-  G->D: check_dependencies(geëxtraheerde data)
-  D->D: Controleert afhankelijkheden
-  D-->G: Retourneert eventuele problemen
-  alt Geen problemen
-    G->DG: generate_deployment(geëxtraheerde data)
-    DG->DG: Genereert uitrolcode
-  else Problemen gevonden
-    G->G: Schrijft problemen weg naar bestand
-    G->G: Stopt uitvoering
-  end
-```
-
-## Implementation
-
-Class Diagram
-
-```mermaid
-classDiagram
-    Genesis -- ConfigFile : gebruikt
-    ConfigFile -- ConfigData : bevat
-    ConfigData o-- PowerDesignerConfig
-    ConfigData o-- ExtractorConfig
-    ConfigData o-- GeneratorConfig
-    ConfigData o-- PublisherConfig
-    ConfigData o-- DevOpsConfig
-```
-
-## Configuratiegegevens
-
-De configuratie wordt opgeslagen in dataclasses die zijn afgeleid van de YAML-structuur. Deze bieden typeveiligheid en automatische validatie.
-
 ### Key components
 
 **```ConfigData```**: Bevat globale instellingen zoals de titel van het project en het pad naar de outputmap.
@@ -135,9 +133,9 @@ De configuratie wordt opgeslagen in dataclasses die zijn afgeleid van de YAML-st
 
 **```DevOpsConfig```**: Bevat informatie met betrekking tot DevOps-integratie, waaronder organisatie, project, repository, branch en details van het werkitem.
 
-## API reference
+## API referentie
 
-### Class diagram with details
+### Class-diagram met details
 
 ```mermaid
 classDiagram
