@@ -22,8 +22,8 @@ if __name__ == "__main__":
 
     parser.add_argument("config_file", help="Locatie van een configuratiebestand")
     parser.add_argument(
-        "-d", "--dry-run", action="store_true", help="Sla DevOps deployment over"
+        "-s", "--skip", action="store_true", help="Sla DevOps deployment over"
     )
     args = parser.parse_args()
     genesis = Orchestrator(file_config=Path(args.config_file))
-    genesis.start_processing()
+    genesis.start_processing(skip_deployment=args.skip)
