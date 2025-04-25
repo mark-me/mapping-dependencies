@@ -12,7 +12,7 @@ Het script ```main.py``` is het startpunt van de MMDE pijplijn genaamd Genesis. 
 python main.py path/to/config.yaml
 ```
 
-## Orkestrator
+## Verwerkingsvolgorde
 
 ```mermaid
 sequenceDiagram
@@ -32,7 +32,9 @@ sequenceDiagram
     CLI->>Gebruiker: Toont resultaat
 ```
 
-## Verwerkingsvolgorde van orkestrator
+## Orkestrator
+
+### Verwerkingsvolgorde van orkestrator
 
 ```mermaid
 sequenceDiagram
