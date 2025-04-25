@@ -8,7 +8,7 @@ import yaml
 
 from logtools import get_logger
 
-from .config_dataclasses import ConfigData, DevOpsConfig
+from .config_definition import ConfigData, DevOpsConfig
 
 logger = get_logger(__name__)
 
