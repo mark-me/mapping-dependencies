@@ -55,7 +55,7 @@ sequenceDiagram
   D->D: Controleert afhankelijkheden
   D-->G: Retourneert eventuele problemen
   alt Geen problemen
-    G->DG: generate_deployment(geëxtraheerde data)
+    G->DG: generate_code(geëxtraheerde data)
     DG->DG: Genereert uitrolcode
   else Problemen gevonden
     G->G: Schrijft problemen weg naar bestand
