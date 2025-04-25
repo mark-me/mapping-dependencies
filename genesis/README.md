@@ -25,7 +25,7 @@ sequenceDiagram
     CLI->>Orchestrator: Maakt Orchestrator-object aan met configuratiebestand
     Orchestrator->>Orchestrator: Initialiseert Orkestrator
     Orchestrator->>Orchestrator: Laadt configuratie
-    Orkestrator->>Orchestrator: Valideert configuratie
+    Orchestrator->>Orchestrator: Valideert configuratie
     Orchestrator->>Orchestrator: Zet verwerkingsomgeving op
     Orchestrator->>Orchestrator: Start verwerking
     Orchestrator->>CLI: Geeft resultaat terug
