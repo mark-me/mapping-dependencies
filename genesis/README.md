@@ -1,6 +1,6 @@
 # Genesis Orkestratie
 
-Het script ```main.py``` is het startpunt van de MMDE pijplijn genaamd Genesis. Deze pijplijn leest configuratie uit een YAML-bestand, verwerkt Power Designer-modelbestanden, controleert afhankelijkheden en genereert uitrolcode voor deployment.
+Het Python-script, ```main.py```, dient als het startpunt voor de "Genesis" workflow-orkestrator. Het verwerkt commandoregelargumenten, leest een configuratiebestand en start het workflowproces. De voornaamste functie is het beheren en uitvoeren van de stappen die in de configuratie zijn gedefinieerd, mogelijk inclusief uitrolstappen.
 
 ## Gebruik
 
