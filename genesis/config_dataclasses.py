@@ -25,8 +25,8 @@ class GeneratorConfig:
     Specifies the output folder, platform templates, and JSON file for created DDLs.
     """
     templates_platform: str
+    created_ddls_json: str
     folder: str = "Generator"
-    created_ddls_json: str = "ddls.json"
 
 @dataclass
 class PublisherConfig:
