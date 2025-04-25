@@ -1,12 +1,12 @@
 import os
-from dataclasses import field, fields, is_dataclass
+from dataclasses import asdict, field, fields, is_dataclass
 from pathlib import Path
 
 import yaml
 
 from logtools import get_logger
 
-from .config_dataclasses import ConfigData
+from .config_dataclasses import ConfigData, DevOpsConfig
 
 logger = get_logger(__name__)
 
@@ -66,9 +66,9 @@ class ConfigFile:
 
         config_raw["power_designer"] = config_raw.pop("power-designer")
 
-        return self.fill_defaults(ConfigData, config_raw)
+        return self._fill_defaults(ConfigData, config_raw)
 
-    def fill_defaults(self, cls, data: dict):
+    def _fill_defaults(self, cls, data: dict):
         """Recursively fills default values for dataclass fields.
 
         Handles nested dataclasses and populates fields with values from the provided data,
@@ -80,7 +80,7 @@ class ConfigFile:
             if f.name in data:
                 val = data[f.name]
                 init_args[f.name] = (
-                    self.fill_defaults(f.type, val)
+                    self._fill_defaults(f.type, val)
                     if is_dataclass(f.type) and isinstance(val, dict)
                     else val
                 )
@@ -131,6 +131,17 @@ class ConfigFile:
                 version = f"v{major:02}.{minor:02}.{patch:02}"
         return version
 
+    def create_example_config(self, file_output: str) -> None:
+        """Create an example configuration file.
+
+        Generates an example YAML configuration file with default values and writes it to the specified path.
+        """
+        example_config = ConfigData()
+        config_dict = asdict(example_config)
+        yaml_string = yaml.dump(config_dict, sort_keys=False, allow_unicode=True)
+        with open(file_output, "w") as f:
+            f.write(yaml_string)
+
     @property
     def dir_intermediate(self) -> str:
         """Directory where all intermediate output is placed
@@ -148,7 +159,7 @@ class ConfigFile:
         return folder
 
     @property
-    def pd_files(self) -> list:
+    def files_power_designer(self) -> list:
         """All Power Designer document paths
 
         Returns a list of Power Designer document paths
@@ -187,3 +198,7 @@ class ConfigFile:
         folder = Path(os.path.join(self.dir_intermediate, self._data.generator.folder))
         self._create_dir(folder)
         return folder
+
+    @property
+    def devops_config(self) -> DevOpsConfig:
+        return self._data.devops

@@ -37,11 +37,20 @@ class Genesis:
     def generate_deployment(self, files_RETW: list) -> None:
         logger.info("Start generating deployment code")
         dir_output = self.config.dir_generate
+        # Create stuff
+
+
+    def clone_repository(self) -> str:
+        # devops_handler = DevOpsHandler(
+        #     self.config.devops_config
+        # )
+        folder = ""
+        return folder
 
     def start_processing(self):
         logger.info("Start Genesis verwerking")
 
-        for pd_file in self.config.pd_files:
+        for pd_file in self.config.files_power_designer:
             file_RETW = self.extract(file_pd_ldm=pd_file)
             lst_files_RETW.append(file_RETW)
 
