@@ -2,7 +2,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from genesis import Genesis
+from genesis import Orchestrator
 
 
 if __name__ == "__main__":
@@ -25,5 +25,5 @@ if __name__ == "__main__":
         "-d", "--dry-run", action="store_true", help="Sla DevOps deployment over"
     )
     args = parser.parse_args()
-    genesis = Genesis(file_config=Path(args.config_file))
+    genesis = Orchestrator(file_config=Path(args.config_file))
     genesis.start_processing()

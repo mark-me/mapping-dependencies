@@ -12,11 +12,31 @@ Het script ```main.py``` is het startpunt van de MMDE pijplijn genaamd Genesis. 
 python main.py path/to/config.yaml
 ```
 
-## Verwerkingsvolgorde van Genesis
+## Orkestrator
 
 ```mermaid
 sequenceDiagram
-  participant G as Genesis
+    participant User
+    participant CLI
+    participant Genesis
+
+    User->>CLI: Executes CLI with config file path
+    CLI->>CLI: Parses arguments (config file, dry-run)
+    CLI->>Genesis: Creates Genesis object with config file
+    Genesis->>Genesis: Initializes Genesis
+    Genesis->>Genesis: Loads configuration
+    Genesis->>Genesis: Validates configuration
+    Genesis->>Genesis: Sets up processing environment
+    Genesis->>Genesis: Starts processing
+    Genesis->>CLI: Returns result
+    CLI->>User: Prints result
+```
+
+## Verwerkingsvolgorde van orkestrator
+
+```mermaid
+sequenceDiagram
+  participant G as Orchestrator
   participant CF as Configuratiebestand
   participant PD as PowerDesigner-bestand
   participant E as Extractor
@@ -45,7 +65,7 @@ sequenceDiagram
 
 ```mermaid
 classDiagram
-    Genesis -- ConfigFile : gebruikt
+    Orchestrator -- ConfigFile : gebruikt
     ConfigFile -- ConfigData : bevat
     ConfigData o-- PowerDesignerConfig
     ConfigData o-- ExtractorConfig
@@ -139,7 +159,7 @@ devops:
 
 ```mermaid
 classDiagram
-    class Genesis {
+    class Orchestrator {
     +__init__(file_config: str)
     +extract(file_pd_ldm: Path) : str
     +check_dependencies(files_RETW: list) : None
@@ -193,7 +213,7 @@ classDiagram
         +devops: DevOpsConfig
     }
 
-    Genesis -- ConfigFile : uses
+    Orchestrator -- ConfigFile : uses
     ConfigFile -- ConfigData : has a
     ConfigFile -- DevOpsConfig : has a
     ConfigData o-- PowerDesignerConfig : has

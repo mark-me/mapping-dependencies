@@ -2,7 +2,7 @@ import os
 import sys
 from pathlib import Path
 
-from genesis import ConfigFile
+from .config_file import ConfigFile
 
 # from dependencies_checker import DagReporting
 # from generator import DevOpsHandler, DDLGenerator, DDLPublisher
@@ -12,7 +12,7 @@ from logtools import get_logger, issue_tracker
 logger = get_logger(__name__)
 
 
-class Genesis:
+class Orchestrator:
     def __init__(self, file_config: str):
         self.file_config = Path(file_config)
         self.config = ConfigFile(file_config=self.file_config)
