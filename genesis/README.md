@@ -40,13 +40,13 @@ Het orchestratorie proces doorloopt de volgende stappen:
 sequenceDiagram
   participant G as Orchestrator
   participant CF as Configuratiebestand
-  participant PD as PowerDesigner-bestand
+  participant PD as Power Designer-bestand
   participant E as Extractor
   participant D as Afhankelijkheidschecker
   participant DG as Codegenerator
 
   G->CF: Leest configuratie
-  loop Voor elk PowerDesigner-bestand
+  loop Voor elk Power Designer-bestand
     G->E: extract(PD)
     E->PD: Leest gegevens
     E-->G: Geeft geëxtraheerde data terug
