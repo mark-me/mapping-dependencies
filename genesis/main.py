@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 from pathlib import Path
@@ -50,7 +51,7 @@ class Genesis:
 
     def start_processing(self):
         logger.info("Start Genesis verwerking")
-
+        lst_files_RETW = []
         for pd_file in self.config.files_power_designer:
             file_RETW = self.extract(file_pd_ldm=pd_file)
             lst_files_RETW.append(file_RETW)
@@ -67,6 +68,20 @@ class Genesis:
         self.generate_deployment(files_RETW=lst_files_RETW)
 
 if __name__ == "__main__":
-    lst_files_RETW = []
-    genesis = Genesis(file_config="genesis/config.yml")
+    parser = argparse.ArgumentParser(description="De Genesis workflow orkestrator")
+    print("""
+     _____                      _
+    / ____|                    (_)
+   | |  __  ___ _ __   ___  ___ _ ___
+   | | |_ |/ _ \\ '_ \\ / _ \\/ __| / __|
+   | |__| |  __/ | | |  __/\\__ \\ \\__ \\
+    \\_____|\\___|_| |_|\\___||___/_|___/
+                            MDDE Douane
+    """, file=sys.stdout)
+
+    parser.add_argument("config_file", help="Locatie van een configuratiebestand")
+    parser.add_argument("-d", "--dry-run", action="store_true", help="Sla DevOps deployment over")
+    args = parser.parse_args()
+    file_config = Path(args.config_file)
+    genesis = Genesis(file_config=file_config)
     genesis.start_processing()
