@@ -16,20 +16,20 @@ python main.py path/to/config.yaml
 
 ```mermaid
 sequenceDiagram
-    participant User
+    participant Gebruiker
     participant CLI
-    participant Genesis
+    participant Orkestrator
 
-    User->>CLI: Executes CLI with config file path
-    CLI->>CLI: Parses arguments (config file, dry-run)
-    CLI->>Genesis: Creates Genesis object with config file
-    Genesis->>Genesis: Initializes Genesis
-    Genesis->>Genesis: Loads configuration
-    Genesis->>Genesis: Validates configuration
-    Genesis->>Genesis: Sets up processing environment
-    Genesis->>Genesis: Starts processing
-    Genesis->>CLI: Returns result
-    CLI->>User: Prints result
+    Gebruiker->>CLI: Voert CLI uit met pad naar configuratiebestand
+    CLI->>CLI: Parseert argumenten (configuratiebestand, dry-run)
+    CLI->>Orkestrator: Maakt Orkestrator-object aan met configuratiebestand
+    Orkestrator->>Orkestrator: Initialiseert Orkestrator
+    Orkestrator->>Orkestrator: Laadt configuratie
+    Orkestrator->>Orkestrator: Valideert configuratie
+    Orkestrator->>Orkestrator: Zet verwerkingsomgeving op
+    Orkestrator->>Orkestrator: Start verwerking
+    Orkestrator->>CLI: Geeft resultaat terug
+    CLI->>Gebruiker: Toont resultaat
 ```
 
 ## Verwerkingsvolgorde van orkestrator
