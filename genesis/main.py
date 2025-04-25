@@ -2,12 +2,12 @@ import os
 import sys
 from pathlib import Path
 
+from genesis import ConfigFile
+
 # from dependencies_checker import DagReporting
 # from generator import DevOpsHandler, DDLGenerator, DDLPublisher
 # from pd_extractor import PDDocument
 from logtools import get_logger, issue_tracker
-
-from genesis import ConfigFile
 
 logger = get_logger(__name__)
 
