@@ -5,7 +5,7 @@ Het script ```main.py``` is het startpunt van de MMDE pijplijn genaamd Genesis. 
 ## Gebruik
 
 * Zorg dat alle PowerDesigner-bestanden op de juiste locatie staan.
-* Vul een YAML-configuratiebestand in op basis van het sjabloon ([zie hieronder](#voorbeeld-configuratiebestand)).
+* Vul een YAML-configuratiebestand in op basis van het sjabloon ([zie voorbeeld](#voorbeeld-configuratiebestand)).
 * Start het script met het pad naar het configuratiebestand:
 
 ```bash
