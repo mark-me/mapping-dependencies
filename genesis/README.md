@@ -163,9 +163,9 @@ classDiagram
     +__init__(file_config: str)
     +extract(file_pd_ldm: Path) : str
     +check_dependencies(files_RETW: list) : None
-    +generate_deployment(files_RETW: list) : None
+    +generate_code(files_RETW: list) : None
     +clone_repository() : str
-    +start_processing()
+    +start_processing(skip_deployment: bool=False) : None
     }
     class ConfigFile {
         +__init__(file_config: str)
