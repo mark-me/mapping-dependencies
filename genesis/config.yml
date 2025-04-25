@@ -3,7 +3,7 @@ title: "first-dry-run"
 folder_intermediate_root: "/home/mark/Development/mapping-dependencies/intermediate"
 
 power-designer:
-  folder: "PowerDesigner"
+  folder: "output"
   files:
     - "babla1.ldm"
     - "blabla2.ldm"

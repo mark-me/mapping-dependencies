@@ -137,10 +137,12 @@ class ConfigFile:
 
         Returns the path to the default file specified in the configuration.
         """
-        folder = os.path.join(
-            self._data.folder_intermediate_root,
-            self._data.title,
-            str(self._version),
+        folder = Path(
+            os.path.join(
+                self._data.folder_intermediate_root,
+                self._data.title,
+                str(self._version),
+            )
         )
         self._create_dir(dir_path=folder)
         return folder
@@ -162,7 +164,7 @@ class ConfigFile:
             for pd_file in lst_pd_files
         ]
         if lst_missing := [str(file) for file in lst_pd_files if not file.exists()]:
-            msg = f"Power Designer bestanden ontbreken: {", ".join(lst_missing)}"
+            msg = f"Power Designer bestanden ontbreken: {', '.join(lst_missing)}"
             raise ConfigFileError(msg, 404)
         return lst_pd_files
 
@@ -172,9 +174,7 @@ class ConfigFile:
 
         Returns the path to the extraction directory within the intermediate output folder.
         """
-        folder = Path(
-            os.path.join(self.dir_intermediate, self._data.extractor.folder)
-        )
+        folder = Path(os.path.join(self.dir_intermediate, self._data.extractor.folder))
         self._create_dir(folder)
         return folder
 
@@ -184,8 +184,6 @@ class ConfigFile:
 
         Returns the path to the generation directory within the intermediate output folder.
         """
-        folder = Path(
-            os.path.join(self.dir_intermediate, self._data.generator.folder)
-        )
+        folder = Path(os.path.join(self.dir_intermediate, self._data.generator.folder))
         self._create_dir(folder)
         return folder

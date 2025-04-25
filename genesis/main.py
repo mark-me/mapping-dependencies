@@ -22,7 +22,7 @@ class Genesis:
         logger.info(f"Start extraction for '{file_pd_ldm}'")
         # document = PDDocument(file_pd_ldm=file_pd_ldm)
         dir_output = self.config.dir_extract
-        file_RETW = os.path.join(dir_output, f"{file_pd_ldm.stem}.json")
+        file_RETW = Path(os.path.join(dir_output, f"{file_pd_ldm.stem}.json"))
         # document.write_result(file_output=file_RETW)
         logger.info(
             f"Het logisch data model en mappings van '{file_pd_ldm}' geëxtraheerd en geschreven naar '{file_RETW}'"
@@ -34,7 +34,7 @@ class Genesis:
         # dag = DagReporting()
         # dag.add_RETW_files(files_RETW=lst_files_RETW)
 
-    def generate_deployment(self, files_RETW: list, dir_output: str) -> None:
+    def generate_deployment(self, files_RETW: list) -> None:
         logger.info("Start generating deployment code")
         dir_output = self.config.dir_generate
 
@@ -54,6 +54,7 @@ class Genesis:
             logger.error(f"Problemen gevonden, rapport is te vinden in {file_issues}")
             sys.exit("Verwerking gestopt nadat er issues zijn aangetroffen")
 
+        self.generate_deployment(files_RETW=lst_files_RETW)
 
 if __name__ == "__main__":
     lst_files_RETW = []
