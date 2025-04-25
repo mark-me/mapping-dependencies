@@ -1,6 +1,8 @@
 import os
-from dataclasses import asdict, field, fields, is_dataclass
+from dataclasses import field, fields, is_dataclass
+from io import StringIO
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -131,16 +133,63 @@ class ConfigFile:
                 version = f"v{major:02}.{minor:02}.{patch:02}"
         return version
 
-    def create_example_config(self, file_output: str) -> None:
+    def _config_to_yaml_with_comments(
+        self, config_dataclass: Any, field_comments: dict, indent=0
+    ) -> str:
+        """Convert a configuration dataclass to YAML with comments.
+
+        Recursively converts the given dataclass to a YAML string, adding comments from the field_comments dictionary.
+        """
+        output = StringIO()
+        indent_str = "  " * indent
+        for config_field in fields(config_dataclass):
+            name = config_field.name
+            value = getattr(config_dataclass, name)
+
+            # Comment als die er is
+            if name in field_comments:
+                output.write(f"{indent_str}# {field_comments[name]}\n")
+
+            output.write(f"{indent_str}{name}:")
+
+            if is_dataclass(value):
+                output.write("\n")
+                output.write(
+                    self._config_to_yaml_with_comments(
+                        value, field_comments=field_comments, index=indent + 1
+                    )
+                )
+            elif isinstance(value, list) and not value:
+                output.write(" []\n")
+            else:
+                yaml_value = yaml.dump(value, default_flow_style=True).strip()
+                output.write(f" {yaml_value}\n")
+
+        return output.getvalue()
+
+    def example_config(self, file_output: str) -> None:
         """Create an example configuration file.
 
         Generates an example YAML configuration file with default values and writes it to the specified path.
         """
+        field_comments = {
+            "title": "De naam van de huidige uitvoering (bijv. 'dry-run')",
+            "folder_intermediate_root": "Basismap waar tussenresultaten worden opgeslagen",
+            "power_designer": "Instellingen voor PowerDesigner LDM-bestanden",
+            "folder": "Submap binnen de root waar PowerDesigner bestanden staan",
+            "files": "Lijst van PowerDesigner .ldm-bestanden",
+            "extractor": "Instellingen voor extractie uit RETW",
+            "generator": "Instellingen voor genereren van DDL/ETL",
+            "publisher": "Instellingen voor publicatie van scripts",
+            "devops": "DevOps instellingen zoals werkitems en branch",
+            "work_item_description": "Omschrijving van het DevOps werkitem",
+        }
         example_config = ConfigData()
-        config_dict = asdict(example_config)
-        yaml_string = yaml.dump(config_dict, sort_keys=False, allow_unicode=True)
+        yaml_with_comments = self._config_to_yaml_with_comments(
+            config_dataclass=example_config, field_comments=field_comments
+        )
         with open(file_output, "w") as f:
-            f.write(yaml_string)
+            f.write(yaml_with_comments)
 
     @property
     def dir_intermediate(self) -> str:

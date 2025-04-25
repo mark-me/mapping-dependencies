@@ -30,13 +30,14 @@ class Genesis:
         return file_RETW
 
     def check_dependencies(self, files_RETW: list) -> None:
-        logger.info("Reporting on dependecies")
+        logger.info("Reporting on dependencies")
         # dag = DagReporting()
         # dag.add_RETW_files(files_RETW=lst_files_RETW)
 
     def generate_deployment(self, files_RETW: list) -> None:
         logger.info("Start generating deployment code")
         dir_output = self.config.dir_generate
+        dir_output
         # Create stuff
 
 
