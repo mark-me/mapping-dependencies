@@ -155,7 +155,7 @@ devops:
 
 **```DevOpsConfig```**: Bevat informatie met betrekking tot DevOps-integratie, waaronder organisatie, project, repository, branch en details van het werkitem.
 
-## API referentie
+## </> API referentie
 
 ### Class-diagram met details
 
