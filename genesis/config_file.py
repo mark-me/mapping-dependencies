@@ -168,6 +168,10 @@ class ConfigFile:
 
     @property
     def dir_extract(self) -> str:
+        """Directory for extracted data.
+
+        Returns the path to the extraction directory within the intermediate output folder.
+        """
         folder = Path(
             os.path.join(self.dir_intermediate, self._data.extractor.folder)
         )
@@ -176,6 +180,10 @@ class ConfigFile:
 
     @property
     def dir_generate(self) -> str:
+        """Directory for generated data.
+
+        Returns the path to the generation directory within the intermediate output folder.
+        """
         folder = Path(
             os.path.join(self.dir_intermediate, self._data.generator.folder)
         )
