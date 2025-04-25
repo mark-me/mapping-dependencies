@@ -12,39 +12,50 @@ from genesis import ConfigFile
 logger = get_logger(__name__)
 
 
-def extract(file_pd_ldm: Path, dir_output: Path) -> str:
-    logger.info(f"Start extraction for '{file_pd_ldm}'")
-    # document = PDDocument(file_pd_ldm=file_pd_ldm)
-    file_RETW = os.path.join(dir_output, f"{file_pd_ldm.stem}.json")
-    # document.write_result(file_output=file_RETW)
-    logger.info(
-        f"Het logisch data model en mappings van '{file_pd_ldm}' geëxtraheerd en geschreven naar '{file_RETW}'"
-    )
-    return file_RETW
+class Genesis:
+    def __init__(self, file_config: str):
+        self.file_config = Path(file_config)
+        self.config = ConfigFile(file_config=self.file_config)
+        logger.info(f"Genesis geïnitialiseerd met configuratie uit '{file_config}'")
 
+    def extract(self, file_pd_ldm: Path) -> str:
+        logger.info(f"Start extraction for '{file_pd_ldm}'")
+        # document = PDDocument(file_pd_ldm=file_pd_ldm)
+        dir_output = self.config.dir_extract
+        file_RETW = os.path.join(dir_output, f"{file_pd_ldm.stem}.json")
+        # document.write_result(file_output=file_RETW)
+        logger.info(
+            f"Het logisch data model en mappings van '{file_pd_ldm}' geëxtraheerd en geschreven naar '{file_RETW}'"
+        )
+        return file_RETW
 
-def check_dependencies(files_RETW: list, dir_output: str) -> None:
-    # dag = DagReporting()
-    # dag.add_RETW_files(files_RETW=lst_files_RETW)
-    pass
+    def check_dependencies(self, files_RETW: list) -> None:
+        logger.info("Reporting on dependecies")
+        # dag = DagReporting()
+        # dag.add_RETW_files(files_RETW=lst_files_RETW)
+
+    def generate_deployment(self, files_RETW: list, dir_output: str) -> None:
+        logger.info("Start generating deployment code")
+        dir_output = self.config.dir_generate
+
+    def start_processing(self):
+        logger.info("Start Genesis verwerking")
+
+        for pd_file in self.config.pd_files:
+            file_RETW = self.extract(file_pd_ldm=pd_file)
+            lst_files_RETW.append(file_RETW)
+
+        self.check_dependencies(files_RETW=lst_files_RETW)
+
+        # Stop process if extraction and dependecies check result in issues
+        if issue_tracker.has_issues():
+            file_issues = os.path.join(self.config.dir_extract, "extraction_issues.csv")
+            issue_tracker.write_csv(file_csv=file_issues)
+            logger.error(f"Problemen gevonden, rapport is te vinden in {file_issues}")
+            sys.exit("Verwerking gestopt nadat er issues zijn aangetroffen")
 
 
 if __name__ == "__main__":
     lst_files_RETW = []
-    file_config = Path("genesis/config.yml")
-    logger.info(f"Gestart met configuratie uit '{file_config}'")
-    config_file = ConfigFile(file_config=file_config)
-
-    dir_output = config_file.dir_RETW_output
-    for pd_file in config_file.pd_files:
-        file_RETW = extract(file_pd_ldm=pd_file, dir_output=config_file.dir_RETW_output)
-        lst_files_RETW.append(file_RETW)
-    check_dependencies(
-        files_RETW=lst_files_RETW, dir_output=config_file.dir_RETW_output
-    )
-
-    if issue_tracker.has_issues():
-        print("Problemen gevonden:", issue_tracker.get_issues())
-        file_issues = os.path.join(config_file.dir_RETW_output, "RETW_issues.csv")
-        issue_tracker.write_csv(file_csv="problemen.csv")
-        sys.exit("Proces gestopt nadat er issues zijn aangetroffen ")
+    genesis = Genesis(file_config="genesis/config.yml")
+    genesis.start_processing()

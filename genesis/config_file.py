@@ -6,14 +6,7 @@ import yaml
 
 from logtools import get_logger
 
-from .config_dataclasses import (
-    ConfigData,
-    DevOpsConfig,
-    ExtractorConfig,
-    GeneratorConfig,
-    PowerDesignerConfig,
-    PublisherConfig,
-)
+from .config_dataclasses import ConfigData
 
 logger = get_logger(__name__)
 
@@ -29,10 +22,11 @@ class ConfigFileError(Exception):
     def __str__(self):
         return f"{self.message} (Error Code: {self.error_code})"
 
-class ConfigFile:
-    """Manages configuration settings from a TOML file.
 
-    Reads and writes configuration data to a TOML file, providing access to settings
+class ConfigFile:
+    """Manages configuration settings from a YAML file.
+
+    Reads and writes configuration data to a YAML file, providing access to settings
     like default file/directory paths, level colors, and export options.
     """
 
@@ -55,13 +49,13 @@ class ConfigFile:
         if not self._file.exists():
             msg = f"Couldn't find config file '{self._file}'"
             logger.error(msg)
-            raise ConfigFileError(msg, 400)
+            raise ConfigFileError(msg, 404)
 
         with open(self._file) as f:
             config_raw = yaml.safe_load(f)
 
         if not isinstance(config_raw, dict):
-            raise ConfigFileError("Configuratiebestand is leeg of ongeldig.", 401)
+            raise ConfigFileError("Configuratiebestand is leeg of ongeldig.", 400)
 
         # Verplichte toplevel velden
         for key in ["title", "folder_intermediate_root"]:
@@ -92,10 +86,12 @@ class ConfigFile:
                 )
             elif f.default != field(default=None).default:
                 init_args[f.name] = f.default
-            elif f.default_factory != field(default_factory=lambda: None).default_factory:
+            elif (
+                f.default_factory != field(default_factory=lambda: None).default_factory
+            ):
                 init_args[f.name] = f.default_factory()
             else:
-                raise ConfigFileError(f"Missing required key: {f.name}", 400)
+                raise ConfigFileError(f"Ontbrekende configuratie voor: '{f.name}'", 400)
         return cls(**init_args)
 
     def _create_dir(self, dir_path: Path) -> None:
@@ -112,7 +108,6 @@ class ConfigFile:
         """Determine the version for the output folder.
 
         Determines the version string by checking existing version folders and incrementing the patch number.
-        Creates the output folder with the determined version.
         """
         version = "v00.01.00"
         folder = Path(
@@ -134,12 +129,10 @@ class ConfigFile:
                 major, minor, patch = map(int, latest_version[1:].split("."))
                 patch += 1
                 version = f"v{major:02}.{minor:02}.{patch:02}"
-        folder = Path(os.path.join(folder, version))
-        self._create_dir(dir_path=folder)
         return version
 
     @property
-    def dir_intermediate_root(self) -> str:
+    def dir_intermediate(self) -> str:
         """Directory where all intermediate output is placed
 
         Returns the path to the default file specified in the configuration.
@@ -149,6 +142,7 @@ class ConfigFile:
             self._data.title,
             str(self._version),
         )
+        self._create_dir(dir_path=folder)
         return folder
 
     @property
@@ -167,12 +161,23 @@ class ConfigFile:
             )
             for pd_file in lst_pd_files
         ]
+        if lst_missing := [str(file) for file in lst_pd_files if not file.exists()]:
+            msg = f"Power Designer bestanden ontbreken: {", ".join(lst_missing)}"
+            raise ConfigFileError(msg, 404)
         return lst_pd_files
 
     @property
-    def dir_RETW_output(self) -> str:
+    def dir_extract(self) -> str:
         folder = Path(
-            os.path.join(self.dir_intermediate_root, self._data.extractor.folder)
+            os.path.join(self.dir_intermediate, self._data.extractor.folder)
+        )
+        self._create_dir(folder)
+        return folder
+
+    @property
+    def dir_generate(self) -> str:
+        folder = Path(
+            os.path.join(self.dir_intermediate, self._data.generator.folder)
         )
         self._create_dir(folder)
         return folder
