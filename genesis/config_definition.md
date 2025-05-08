@@ -2,13 +2,30 @@
 
 ## Overzicht
 
-Dit bestand definieert het configuratieschema voor een grotere applicatie, die vermoedelijk betrekking heeft op datamodellering, codegeneratie en DevOps-automatisering. Het maakt gebruik van Python `dataclasses` om configuratie-opties voor verschillende subsystemen te structureren en documenteren, zoals PowerDesigner-integratie, data-extractie, codegeneratie, publicatie en DevOps-workflows.
+Dit bestand definieert het configuratieschema voor Genesis. Het maakt gebruik van Python [`dataclasses`](https://www.dataquest.io/blog/how-to-use-python-data-classes/) om configuratie-opties voor verschillende subsystemen te structureren en documenteren, zoals PowerDesigner-integratie, data-extractie, codegeneratie, publicatie en DevOps-workflows.
 
 Het bestand fungeert als een centrale plaats om alle configuratiegegevens die door de applicatie worden vereist, te definiëren, valideren en beheren.
 
 ---
 
 ## Belangrijkste Componenten
+
+### ConfigData
+
+* **Doel:**
+  * De hoofdconfiguratieklasse die alle bovenstaande configuraties groepeert.
+
+* **Velden:**
+
+  * `application_title`: Titel van de applicatie (bijv. "Data Pipeline Generator").
+  * `root_folder`: Root-directory voor alle gegenereerde bestanden.
+  * `power_designer`: Instantie van [`PowerDesignerConfig`](#powerdesignerconfig).
+  * `extractor`: Instantie van [`ExtractorConfig`](#extractorconfig).
+  * `generator`: Instantie van [`GeneratorConfig`](#generatorconfig).
+  * `publisher`: Instantie van [`PublisherConfig`](#publisherconfig).
+  * `devops`: Instantie van [`DevOpsConfig`](#devopsconfig).
+
+---
 
 ### PowerDesignerConfig
 
@@ -71,23 +88,6 @@ Het bestand fungeert als een centrale plaats om alle configuratiegegevens die do
   * `repository`: Reponame in DevOps.
   * `branch`: Standaard branch voor feature development.
   * `work_item`: Optioneel veld voor werkitem ID's, gekoppeld aan de wijzigingen.
-
----
-
-### ConfigData
-
-* **Doel:**
-
-  * De hoofdconfiguratieklasse die alle bovenstaande configuraties groepeert.
-* **Velden:**
-
-  * `application_title`: Titel van de applicatie (bijv. "Data Pipeline Generator").
-  * `root_folder`: Root-directory voor alle gegenereerde bestanden.
-  * `power_designer`: Instantie van `PowerDesignerConfig`.
-  * `extractor`: Instantie van `ExtractorConfig`.
-  * `generator`: Instantie van `GeneratorConfig`.
-  * `publisher`: Instantie van `PublisherConfig`.
-  * `devops`: Instantie van `DevOpsConfig`.
 
 ---
 

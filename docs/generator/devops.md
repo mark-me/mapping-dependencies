@@ -1,8 +1,23 @@
-# Overzicht
+# DevOps
+
+## Overzicht
 
 Dit bestand definieert automatisering voor interactie met Azure DevOps Git-repositories als onderdeel van een data-engineeringworkflow. Het doel is om het proces van het klonen van een repository, het aanmaken van een feature-branch, het genereren van DDL/ETL-bestanden en het publiceren van wijzigingen terug naar de repository te stroomlijnen. De configuratie wordt gelezen uit een YAML-bestand en de automatisering is opgezet als een zelfstandig uitvoerbare script.
 
----
+### Rol in het Grotere Systeem
+
+Deze module fungeert als een automatiserings- en integratielaag tussen de DevOps-repository en het data-engineeringsysteem. Het zorgt ervoor dat codegeneratie en publicatie consistent en herhaalbaar worden uitgevoerd, met een focus op versiebeheer en traceerbaarheid. Dit vereenvoudigt het beheer van ETL- en DDL-bestanden in een gestructureerde DevOps-omgeving.
+
+## Externe Afhankelijkheden
+
+* **Generator en Publisher:**
+
+  * `DDLGenerator` en `DDLPublisher` zijn geïmporteerde modules die verantwoordelijk zijn voor het genereren en publiceren van DDL/ETL-bestanden.
+
+* **Systeemtools:**
+
+  * [`Git`](https://git-scm.com/): Voor het klonen en beheren van de repository.
+  * [`Webbrowser`](https://docs.python.org/3/library/webbrowser.html): Voor het openen van de DevOps-pagina voor pull requests.
 
 ## Belangrijkste Componenten
 
@@ -57,36 +72,3 @@ Wanneer het script rechtstreeks wordt uitgevoerd (`__main__` sectie):
 4. **Publicatie:**
 
    * Voert `publish_repo()` uit om de gegenereerde bestanden te committen en te pushen naar de DevOps-repository.
-
----
-
-### Logging en Foutafhandeling
-
-* **Logging:**
-
-  * Gebruikt een aangepaste logging-configuratie (`log_config`) om informatie, waarschuwingen en fouten vast te leggen.
-  * Traceert stappen zoals klonen van de repository, het aanmaken van branches en het pushen van wijzigingen.
-
-* **Foutafhandeling:**
-
-  * Bij authenticatiefouten opent het script de DevOps-loginpagina in een webbrowser.
-  * Na succesvolle login wordt de oorspronkelijke actie opnieuw geprobeerd.
-
----
-
-### Externe Afhankelijkheden
-
-* **Generator en Publisher:**
-
-  * `DDLGenerator` en `DDLPublisher` zijn geïmporteerde modules die verantwoordelijk zijn voor het genereren en publiceren van DDL/ETL-bestanden.
-
-* **Systeemtools:**
-
-  * `Git`: Voor het klonen en beheren van de repository.
-  * `Webbrowser`: Voor het openen van de DevOps-pagina voor pull requests.
-
----
-
-### Rol in het Grotere Systeem
-
-Deze module fungeert als een automatiserings- en integratielaag tussen de DevOps-repository en het data-engineeringsysteem. Het zorgt ervoor dat codegeneratie en publicatie consistent en herhaalbaar worden uitgevoerd, met een focus op versiebeheer en traceerbaarheid. Dit vereenvoudigt het beheer van ETL- en DDL-bestanden in een gestructureerde DevOps-omgeving.

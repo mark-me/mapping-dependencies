@@ -2,13 +2,39 @@
 
 ## Overzicht
 
-Dit bestand definieert een Python-module voor het genereren van DDL (Data Definition Language) en ETL (Extract, Transform, Load) scripts uit een JSON-model, dat doorgaans wordt gegenereerd door een tool genaamd RETW. De module bevat de centrale klasse `DDLGenerator`, die het proces orkestreert van het lezen van configuratie- en modelbestanden, het toepassen van Jinja2 SQL-templates en het schrijven van de resulterende SQL-scripts en metadata naar een Visual Studio-projectstructuur. De generator ondersteunt platformspecifieke templates en houdt een logboek bij van alle gegenereerde bestanden voor verdere publicatie- of implementatiestappen.
+Dit bestand definieert een Python-module voor het genereren van DDL (Data Definition Language) en ETL (Extract, Transform, Load) scripts uit een JSON-model, dat wordt gegenereerd de Extractor. De module bevat de centrale klasse `DDLGenerator`, die het proces orkestreert van het lezen van configuratie- en modelbestanden, het toepassen van Jinja2 SQL-templates en het schrijven van de resulterende SQL-scripts en metadata naar een Visual Studio-projectstructuur. De generator ondersteunt platformspecifieke templates en houdt een logboek bij van alle gegenereerde bestanden voor verdere publicatie- of implementatiestappen.
 
 ---
 
-### Belangrijkste Componenten
+### Rol in het Grotere Systeem
 
-#### DDLGenerator (klasse)
+De `DDLGenerator`-klasse fungeert als een centrale component voor de vertaling van JSON-modeldata naar database-artefacten, met name voor ETL- en DDL-processen. Het maakt gebruik van templates om platform-specifieke SQL-scripts te genereren en zorgt ervoor dat gegenereerde artefacten worden gedocumenteerd voor latere verwerking in DevOps-pijplijnen.
+
+Deze aanpak ondersteunt:
+
+* **Consistentie:** Templates zorgen voor gestandaardiseerde SQL-scripts.
+* **Herbruikbaarheid:** Door gebruik van Jinja2-templates kunnen aanpassingen centraal worden beheerd.
+* **Traceerbaarheid:** De gegenereerde JSON-output biedt een log van alle bestanden, inclusief hun locatie en implementatiestatus.
+
+---
+
+### Outputbeheer
+
+* De gegenereerde DDL- en ETL-bestanden worden georganiseerd in submappen per entiteit, view of post-deployment script.
+* Een JSON-bestand (`generated_ddls.json`) biedt een overzicht van alle gegenereerde bestanden, gecategoriseerd per type.
+
+---
+
+## Afhankelijkheden
+
+* **[Jinja2](https://jinja.palletsprojects.com/en/stable/):** Voor het renderen van SQL-templates.
+* **[sqlparse/sqlfluff](https://sqlfluff.com/):** Voor het formatteren en linten van gegenereerde SQL-scripts.
+* **[Pathlib](https://docs.python.org/3/library/pathlib.html):** Voor platformonafhankelijke padbeheer.
+* **YAML/JSON:** Voor configuratie en uitvoer.
+
+## Belangrijkste Componenten
+
+### DDLGenerator (klasse)
 
 * **Doel:** Verantwoordelijk voor het volledige proces van het genereren van DDL- en ETL-scripts uit een JSON-model.
 * **Initialisatie:**
@@ -18,7 +44,7 @@ Dit bestand definieert een Python-module voor het genereren van DDL (Data Defini
 
 ---
 
-#### Belangrijke Methoden
+### Belangrijke Methoden
 
 * `read_model_file()`
 
@@ -80,7 +106,7 @@ Dit bestand definieert een Python-module voor het genereren van DDL (Data Defini
 
 ---
 
-### Uitvoeringsstroom als Script
+## Uitvoeringsstroom als Script
 
 Wanneer het script rechtstreeks wordt uitgevoerd (`__main__` sectie):
 
@@ -102,46 +128,3 @@ Wanneer het script rechtstreeks wordt uitgevoerd (`__main__` sectie):
 4. **JSON Output Genereren:**
 
    * Schrijft een JSON-bestand met een overzicht van alle gegenereerde bestanden (`generated_ddls.json`).
-
----
-
-### Logging en Foutafhandeling
-
-* **Logging:**
-
-  * Loggingconfiguratie wordt centraal ingesteld en omvat informatie-, fout- en waarschuwingsmeldingen.
-  * Traceert stappen zoals het genereren van DDL/ETL-bestanden, kopiëren van scripts en outputbeheer.
-
-* **Foutafhandeling:**
-
-  * Controleert of vereiste paden bestaan en of sjablonen beschikbaar zijn.
-  * Logt ontbrekende bestanden en templatefouten.
-
----
-
-### Afhankelijkheden
-
-* **Jinja2:** Voor het renderen van SQL-templates.
-* **sqlparse/sqlfluff:** Voor het formatteren en linten van gegenereerde SQL-scripts.
-* **Pathlib:** Voor platformonafhankelijke padbeheer.
-* **YAML/JSON:** Voor configuratie en uitvoer.
-
----
-
-### Outputbeheer
-
-* De gegenereerde DDL- en ETL-bestanden worden georganiseerd in submappen per entiteit, view of post-deployment script.
-* Een JSON-bestand (`generated_ddls.json`) biedt een overzicht van alle gegenereerde bestanden, gecategoriseerd per type.
-* Dit bestand kan door andere tools worden gebruikt om de implementatie te automatiseren of om bestanden te publiceren naar DevOps.
-
----
-
-### Rol in het Grotere Systeem
-
-De `DDLGenerator`-klasse fungeert als een centrale component voor de vertaling van JSON-modeldata naar database-artefacten, met name voor ETL- en DDL-processen. Het maakt gebruik van templates om platform-specifieke SQL-scripts te genereren en zorgt ervoor dat gegenereerde artefacten worden gedocumenteerd voor latere verwerking in DevOps-pijplijnen.
-
-Deze aanpak ondersteunt:
-
-* **Consistentie:** Templates zorgen voor gestandaardiseerde SQL-scripts.
-* **Herbruikbaarheid:** Door gebruik van Jinja2-templates kunnen aanpassingen centraal worden beheerd.
-* **Traceerbaarheid:** De gegenereerde JSON-output biedt een log van alle bestanden, inclusief hun locatie en implementatiestatus.

@@ -4,9 +4,25 @@
 
 Dit bestand definieert een Python-hulpprogramma voor het programmatisch bijwerken van een Visual Studio SQL-projectbestand (`.sqlproj`) door nieuwe SQL-bestanden, mappen en post-deployment scripts toe te voegen die elders in het systeem zijn gegenereerd. De centrale klasse, `DDLPublisher`, leest een JSON-bestand dat de gegenereerde DDL-bestanden beschrijft en werkt het projectbestand bij om ervoor te zorgen dat het project synchroon blijft met de gegenereerde artefacten.
 
-Het script kan als standalone tool worden uitgevoerd, waarbij configuratie uit een YAML-bestand wordt geladen.
+**Doelen:**
 
----
+* **Consistentie:** Zorgt ervoor dat alle gegenereerde artefacten in de projectstructuur worden opgenomen.
+* **Traceerbaarheid:** Logt alle wijzigingen voor later gebruik of auditing.
+* **Automatisering:** Vermindert handmatig werk en voorkomt potentiële fouten door inconsistenties in de projectstructuur.
+
+Dit zorgt voor een naadloze integratie van nieuwe SQL-scripts in de Visual Studio-omgeving en draagt bij aan een gestroomlijnde implementatiepijplijn.
+
+### Uitvoerbeheer
+
+* **JSON Outputbestand (`generated_ddls.json`):**
+
+  * Dit bestand bevat een overzicht van alle gegenereerde DDL-bestanden, gestructureerd per map of type.
+  * Wordt gebruikt als input voor de `publish()`-methode om nieuwe bestanden en mappen te identificeren.
+
+* **SQL Projectbestand (`.sqlproj`):**
+
+  * De `.sqlproj`-structuur wordt bijgewerkt met nieuwe bestanden en post-deployment scripts.
+  * Problematische XML-elementen, zoals dubbele `<VisualStudioVersion>`-elementen, worden verwijderd om laadfouten in Visual Studio te voorkomen.
 
 ## Belangrijkste Componenten
 
@@ -99,31 +115,3 @@ Wanneer het script rechtstreeks wordt uitgevoerd (`__main__` sectie):
 * **Alternatieve Strategieën:**
 
   * Een mogelijke verbetering is het bijhouden van nieuwe bestanden in een aparte `includelist.json` in plaats van in het `.sqlproj`-bestand zelf.
-
----
-
-### Uitvoerbeheer
-
-* **JSON Outputbestand (`generated_ddls.json`):**
-
-  * Dit bestand bevat een overzicht van alle gegenereerde DDL-bestanden, gestructureerd per map of type.
-  * Wordt gebruikt als input voor de `publish()`-methode om nieuwe bestanden en mappen te identificeren.
-
-* **SQL Projectbestand (`.sqlproj`):**
-
-  * De `.sqlproj`-structuur wordt bijgewerkt met nieuwe bestanden en post-deployment scripts.
-  * Problematische XML-elementen, zoals dubbele `<VisualStudioVersion>`-elementen, worden verwijderd om laadfouten in Visual Studio te voorkomen.
-
----
-
-### Rol in het Grotere Systeem
-
-De `DDLPublisher`-klasse fungeert als een kritieke component voor het bijwerken van Visual Studio SQL-projectbestanden met nieuw gegenereerde artefacten. Het stelt ontwikkelaars in staat om de projectstructuur up-to-date te houden met nieuwe SQL-scripts, zonder handmatige aanpassingen aan de XML-structuur van het projectbestand.
-
-**Voordelen:**
-
-* **Consistentie:** Zorgt ervoor dat alle gegenereerde artefacten in de projectstructuur worden opgenomen.
-* **Traceerbaarheid:** Logt alle wijzigingen voor later gebruik of auditing.
-* **Automatisering:** Vermindert handmatig werk en voorkomt potentiële fouten door inconsistenties in de projectstructuur.
-
-Dit zorgt voor een naadloze integratie van nieuwe SQL-scripts in de Visual Studio-omgeving en draagt bij aan een gestroomlijnde implementatiepijplijn.
