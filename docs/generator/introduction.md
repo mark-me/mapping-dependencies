@@ -1,5 +1,6 @@
-# Introduction 
-The Generator Package contains code for 
+# Introduction
+
+The Generator Package contains code for
 
 ```mermaid
 graph LR
@@ -19,8 +20,8 @@ end
 codelists ~~~ devops
 devops ~~~ generator
 generator ~~~ publisher
-
 ```
+
 ```mermaid
 graph LR
     inAgs@{ shape: doc, label: "(AGS) DMS.core Reference Data v1.42 ISSUED.xls"}
@@ -74,7 +75,7 @@ subgraph Genesis
 
 end
 
-  Files ~~~  Class_Functions 
+  Files ~~~  Class_Functions
   inModel ~~~ outModel
   outModel ~~~ inAgs
   inAgs ~~~ inDms
@@ -102,5 +103,4 @@ read_model_file --> get_templates
 get_templates --> write_ddl
 write_ddl --> write_json_created_ddls
 write_json_created_ddls --> publish
-
-``` 
+```

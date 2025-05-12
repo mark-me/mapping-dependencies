@@ -3,6 +3,7 @@
 ```mermaid
 sequenceDiagram
     LDM-file ->> PDDocument: __init__(bestandslocatie)
+<<<<<<< HEAD
     destroy LDM-file
     LDM-file -x PDDocument: read_file_model
 
